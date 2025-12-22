@@ -1,6 +1,13 @@
 # Changelog
 
 
+## v2.17.0
+*22 December 2025*
+
+- Fix playwright tests (#567)
+- Fix occassional incorrect tree order (#583)
+- Fix ES5 output (#587)
+
 ## v2.16.1
 *8 September 2025*
 
