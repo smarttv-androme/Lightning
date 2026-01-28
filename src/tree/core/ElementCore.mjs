@@ -201,8 +201,9 @@ export default class ElementCore {
         } else {
             this._disableFuncX();
             if (this.hasFlexLayout()) {
-                this.x += (v - this._layout.originalX);
+                const dx = v - this._layout.originalX;
                 this._layout.setOriginalXWithoutUpdatingLayout(v);
+                this.x += dx;
             } else {
                 this.x = v;
             }
@@ -261,8 +262,9 @@ export default class ElementCore {
         } else {
             this._disableFuncY();
             if (this.hasFlexLayout()) {
-                this.y += (v - this._layout.originalY);
+                const dy = v - this._layout.originalY;
                 this._layout.setOriginalYWithoutUpdatingLayout(v);
+                this.y += dy;
             } else {
                 this.y = v;
             }
