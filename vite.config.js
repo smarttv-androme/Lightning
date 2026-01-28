@@ -37,6 +37,8 @@ if (isBidiTokenizerBuild) {
 
 export default defineConfig(() => {
   return {
+    // Disable esbuild completely for ES5 builds
+    esbuild: isEs5Build ? false : undefined,
     plugins: [
       fixTsImportsFromJs(),
       /* Cleanup comments */
@@ -45,6 +47,9 @@ export default defineConfig(() => {
       }),
       /* ES5 (if requested) */
       isEs5Build && babel({
+        babelHelpers: 'bundled',
+        exclude: 'node_modules/**',
+        extensions: ['.js', '.ts', '.mjs', '.mts'],
         presets: [
           [
             '@babel/preset-env',
@@ -57,7 +62,8 @@ export default defineConfig(() => {
               modules: false,
             },
           ],
-        ],
+          '@babel/preset-typescript'
+        ]
       }),
       /* Add comment banner to top of bundle */
       banner([
@@ -77,6 +83,8 @@ export default defineConfig(() => {
         keep_classnames: true,
         keep_fnames: true,
       },
+      // Disable esbuild for ES5 builds to let Babel handle transpilation
+      target: isEs5Build ? false : 'esnext',
       lib: {
         // Could also be a dictionary or array of multiple entry points
         entry,

@@ -1,6 +1,31 @@
 # Changelog
 
-## v2.14.0
+
+## v2.17.0
+*22 December 2025*
+
+- Fix playwright tests (#567)
+- Fix occassional incorrect tree order (#583)
+- Fix ES5 output (#587)
+
+## v2.16.1
+*8 September 2025*
+
+- Fixed url checking when using data URLs (#575)
+
+
+## v2.15.0
+*12 March 2025*
+
+- Fixed issue related to image URL validation for image worker (#566)
+- Fixed issue related to imageWorker can't load relative URLs(#564)
+- Fixed regression issue related to types changes.(#562)
+- Fixed issue related to incorrect types(#558)
+- Added github workflow to validate PR's(#560)
+- Added support for animation by reference(#563)
+- Added Playwright browser tests(#561)
+
+## v2.14.1
 *20 September 2024*
 
 - Reworded TS comments
