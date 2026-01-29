@@ -33,6 +33,8 @@ const COMPLEX_HEBREW_COUNT = 2;
 const COMPLEX_ARABIC = COMPLEX_HEBREW + COMPLEX_HEBREW_COUNT;
 const COMPLEX_ARABIC_COUNT = 1;
 
+const OUTPUT_DIR = "temp/playwright";
+
 async function compareWrapping(page: Page, width: number) {
   page.setDefaultTimeout(2000);
   await page.setViewportSize({ width, height: 4000 });
@@ -41,20 +43,20 @@ async function compareWrapping(page: Page, width: number) {
   for (let i = FIRST_TEST; i < COMPLEX_HEBREW; i++) {
     await page
       .locator(`#preview${i}`)
-      .screenshot({ path: `temp/wrap-${width}-test${i}-html.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/wrap-${width}-test${i}-html.png` });
     await page
       .locator(`#canvas${i}`)
-      .screenshot({ path: `temp/wrap-${width}-test${i}-canvas.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/wrap-${width}-test${i}-canvas.png` });
 
     const { equal, diffImage, differentPixels } = await looksSame(
-      `temp/wrap-${width}-test${i}-html.png`,
-      `temp/wrap-${width}-test${i}-canvas.png`,
+      `${OUTPUT_DIR}/wrap-${width}-test${i}-html.png`,
+      `${OUTPUT_DIR}/wrap-${width}-test${i}-canvas.png`,
       {
         createDiffImage: true,
         strict: false,
       }
     );
-    diffImage?.save(`temp/wrap-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/wrap-${width}-diff${i}.png`);
 
     if (differentPixels) {
       console.log(
@@ -77,20 +79,20 @@ async function compareLetterSpacing(page: Page, width: number) {
   for (let i = FIRST_TEST; i < STYLED_TESTS + STYLED_COUNT; i++) {
     await page
       .locator(`#preview${i}`)
-      .screenshot({ path: `temp/spacing-${width}-test${i}-html.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/spacing-${width}-test${i}-html.png` });
     await page
       .locator(`#canvas${i}`)
-      .screenshot({ path: `temp/spacing-${width}-test${i}-canvas.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/spacing-${width}-test${i}-canvas.png` });
 
     const { equal, diffImage, differentPixels } = await looksSame(
-      `temp/spacing-${width}-test${i}-html.png`,
-      `temp/spacing-${width}-test${i}-canvas.png`,
+      `${OUTPUT_DIR}/spacing-${width}-test${i}-html.png`,
+      `${OUTPUT_DIR}/spacing-${width}-test${i}-canvas.png`,
       {
         createDiffImage: true,
         strict: false,
       }
     );
-    diffImage?.save(`temp/spacing-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/spacing-${width}-diff${i}.png`);
 
     if (differentPixels) {
       console.log(
@@ -111,20 +113,20 @@ async function compareDetection(page: Page, width: number, start: number, count:
   for (let i = start; i < start + count; i++) {
     await page
       .locator(`#preview${i}`)
-      .screenshot({ path: `temp/detection-${width}-test${i}-html.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/detection-${width}-test${i}-html.png` });
     await page
       .locator(`#canvas${i}`)
-      .screenshot({ path: `temp/detection-${width}-test${i}-canvas.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/detection-${width}-test${i}-canvas.png` });
 
     const { equal, diffImage, differentPixels } = await looksSame(
-      `temp/detection-${width}-test${i}-html.png`,
-      `temp/detection-${width}-test${i}-canvas.png`,
+      `${OUTPUT_DIR}/detection-${width}-test${i}-html.png`,
+      `${OUTPUT_DIR}/detection-${width}-test${i}-canvas.png`,
       {
         createDiffImage: true,
         strict: false,
       }
     );
-    diffImage?.save(`temp/detection-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/detection-${width}-diff${i}.png`);
 
     if (differentPixels) {
       console.log(
@@ -145,20 +147,20 @@ async function compareComplex(page: Page, width: number, start: number, count: n
   for (let i = start; i < start + count; i++) {
     await page
       .locator(`#preview${i}`)
-      .screenshot({ path: `temp/complex-${width}-test${i}-html.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/complex-${width}-test${i}-html.png` });
     await page
       .locator(`#canvas${i}`)
-      .screenshot({ path: `temp/complex-${width}-test${i}-canvas.png` });
+      .screenshot({ path: `${OUTPUT_DIR}/complex-${width}-test${i}-canvas.png` });
 
     const { equal, diffImage, differentPixels } = await looksSame(
-      `temp/complex-${width}-test${i}-html.png`,
-      `temp/complex-${width}-test${i}-canvas.png`,
+      `${OUTPUT_DIR}/complex-${width}-test${i}-html.png`,
+      `${OUTPUT_DIR}/complex-${width}-test${i}-canvas.png`,
       {
         createDiffImage: true,
         strict: false,
       }
     );
-    diffImage?.save(`temp/complex-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/complex-${width}-diff${i}.png`);
 
     if (differentPixels) {
       console.log(
