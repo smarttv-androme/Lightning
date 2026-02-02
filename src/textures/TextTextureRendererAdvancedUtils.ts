@@ -359,7 +359,7 @@ export function layoutSpans(
           const reversed = primaryRtl !== rtl;
           do {
             text = reversed ? trimWordStart(text, rtl) : trimWordEnd(text, rtl);
-            width = ctx.measureText(text).width;
+            width = measureText(ctx, text, letterSpacing);
           } while (width > maxWidth);
           if (width > suffixWidth) {
             last = {

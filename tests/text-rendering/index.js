@@ -300,9 +300,9 @@ function getDefaultSettings() {
     textColor: 0xff000000,
     textBaseline: "alphabetic",
     verticalAlign: "top",
-    fontFace: null,
+    fontFace: ["Noto Sans", "Noto Sans Arabic", "Noto Sans Hebrew"],
     fontStyle: "",
-    fontSize: 40,
+    fontSize: 36,
     lineHeight: 48,
     wordWrap: true,
     letterSpacing,
@@ -315,9 +315,9 @@ function getDefaultSettings() {
     paddingRight: 0,
     offsetY: null,
     cutSx: 0,
-    cutSy: 0,
     cutEx: 0,
-    cutEy: 0,
+    cutSy: -3, // adjust vertical rendering to match HTML
+    cutEy: 999,
     w: 0,
     h: 0,
     highlight: false,
@@ -388,4 +388,21 @@ document.addEventListener("wheel", (e) => {
   location.hash = `#test${scrollN}`;
 });
 
-demo();
+// Wait for Noto Sans fonts to load before running demo
+document.fonts.ready.then(() => {
+  // Explicitly load Noto Sans families in regular and bold weights
+  Promise.all([
+    document.fonts.load('400 36px "Noto Sans"'),
+    document.fonts.load('700 36px "Noto Sans"'),
+    document.fonts.load('400 36px "Noto Sans Arabic"'),
+    document.fonts.load('700 36px "Noto Sans Arabic"'),
+    document.fonts.load('400 36px "Noto Sans Hebrew"'),
+    document.fonts.load('700 36px "Noto Sans Hebrew"')
+  ]).then(() => {
+    demo();
+  }).catch((error) => {
+    console.error('Font loading failed:', error);
+    // Run demo anyway
+    demo();
+  });
+});
