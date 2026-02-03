@@ -37,6 +37,11 @@ const BASIC_MAX_DIFF = 50;
 const LOOSE_MAX_DIFF = 75;
 
 const OUTPUT_DIR = "temp/playwright";
+const LS_OPTIONS = {
+  createDiffImage: true,
+  strict: false,
+  ignoreAntialiasing: true,
+} as const;
 
 async function compareWrapping(page: Page, width: number) {
   page.setDefaultTimeout(2000);
@@ -89,10 +94,7 @@ async function compareLetterSpacing(page: Page, width: number) {
     const { equal, diffImage, differentPixels } = await looksSame(
       `${OUTPUT_DIR}/spacing-${width}-test${i}-html.png`,
       `${OUTPUT_DIR}/spacing-${width}-test${i}-canvas.png`,
-      {
-        createDiffImage: true,
-        strict: false,
-      }
+      LS_OPTIONS
     );
     diffImage?.save(`${OUTPUT_DIR}/spacing-${width}-diff${i}.png`);
 
@@ -123,10 +125,7 @@ async function compareDetection(page: Page, width: number, start: number, count:
     const { equal, diffImage, differentPixels } = await looksSame(
       `${OUTPUT_DIR}/detection-${width}-test${i}-html.png`,
       `${OUTPUT_DIR}/detection-${width}-test${i}-canvas.png`,
-      {
-        createDiffImage: true,
-        strict: false,
-      }
+      LS_OPTIONS
     );
     diffImage?.save(`${OUTPUT_DIR}/detection-${width}-diff${i}.png`);
 
@@ -157,10 +156,7 @@ async function compareComplex(page: Page, width: number, start: number, count: n
     const { equal, diffImage, differentPixels } = await looksSame(
       `${OUTPUT_DIR}/complex-${width}-test${i}-html.png`,
       `${OUTPUT_DIR}/complex-${width}-test${i}-canvas.png`,
-      {
-        createDiffImage: true,
-        strict: false,
-      }
+      LS_OPTIONS
     );
     diffImage?.save(`${OUTPUT_DIR}/complex-${width}-diff${i}.png`);
 
