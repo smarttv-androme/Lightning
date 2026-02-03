@@ -37,7 +37,21 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: {...devices["Desktop Chrome"]},
+      use: {
+        ...devices["Desktop Chrome"],
+        // Disable text aliasing for consistent text rendering in pixel comparisons
+        launchOptions: {
+          args: [
+            '--font-render-hinting=none',
+            '--disable-font-subpixel-positioning',
+            '--disable-lcd-text',
+            '--disable-skia-runtime-opts',
+            '--disable-smooth-scrolling',
+          ],
+        },
+        // Ensure consistent device pixel ratio
+        deviceScaleFactor: 1,
+      },
     },
     /*{
       name: "webkit",
