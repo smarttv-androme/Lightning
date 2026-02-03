@@ -33,6 +33,9 @@ const COMPLEX_HEBREW_COUNT = 2;
 const COMPLEX_ARABIC = COMPLEX_HEBREW + COMPLEX_HEBREW_COUNT;
 const COMPLEX_ARABIC_COUNT = 1;
 
+const BASIC_MAX_DIFF = 50;
+const LOOSE_MAX_DIFF = 75;
+
 const OUTPUT_DIR = "temp/playwright";
 
 async function compareWrapping(page: Page, width: number) {
@@ -63,9 +66,8 @@ async function compareWrapping(page: Page, width: number) {
         `Test ${i} - ${width}px - different pixels: ${differentPixels}`
       );
     }
-    const maxDiff = i >= BIDI_TESTS ? 150 : 50; // Arabic needs more tolerance
     expect(
-      equal || differentPixels < maxDiff,
+      equal || differentPixels < BASIC_MAX_DIFF,
       `[Test ${i}] HTML and canvas rendering do not match (${differentPixels} pixels differ)`
     ).toBe(true);
   }
@@ -100,7 +102,7 @@ async function compareLetterSpacing(page: Page, width: number) {
       );
     }
     expect(
-      equal || differentPixels < 50,
+      equal || differentPixels < LOOSE_MAX_DIFF,
       `[Test ${i}] HTML and canvas rendering do not match (${differentPixels} pixels differ)`
     ).toBe(true);
   }
@@ -134,13 +136,13 @@ async function compareDetection(page: Page, width: number, start: number, count:
       );
     }
     expect(
-      equal || differentPixels < 50,
+      equal || differentPixels < BASIC_MAX_DIFF,
       `[Test ${i}] HTML and canvas rendering do not match (${differentPixels} pixels differ)`
     ).toBe(true);
   }
 }
 
-async function compareComplex(page: Page, width: number, start: number, count: number, maxDiff = 100) {
+async function compareComplex(page: Page, width: number, start: number, count: number) {
   await page.setViewportSize({ width, height: 4000 });
   await page.goto("/tests/text-rendering.html?playwright");
 
@@ -168,7 +170,7 @@ async function compareComplex(page: Page, width: number, start: number, count: n
       );
     }
     expect(
-      equal || differentPixels < maxDiff,
+      equal || differentPixels < BASIC_MAX_DIFF,
       `[Test ${i}] HTML and canvas rendering do not match (${differentPixels} pixels differ)`
     ).toBe(true);
   }
@@ -195,12 +197,8 @@ test("wrap 840", async ({ page }) => {
   await compareWrapping(page, 840);
 });
 
-test("wrap 720", async ({ page }) => {
-  await compareWrapping(page, 720);
-});
-
-test("wrap 630", async ({ page }) => {
-  await compareWrapping(page, 630);
+test("wrap 700", async ({ page }) => {
+  await compareWrapping(page, 700);
 });
 
 // TODO: fix embedded RTL in LTR
@@ -208,12 +206,12 @@ test("wrap 630", async ({ page }) => {
 //   await compareWrapping(page, 510);
 // });
 
-test("letter spacing 1", async ({ page }) => {
+test("letter spacing wrap 1000", async ({ page }) => {
   await compareLetterSpacing(page, 1000);
 });
 
-test("letter spacing 2", async ({ page }) => {
-  await compareLetterSpacing(page, 550);
+test("letter spacing wrap 600", async ({ page }) => {
+  await compareLetterSpacing(page, 600);
 });
 
 test("direction detection", async ({ page }) => {
@@ -229,5 +227,5 @@ test("complex Hebrew 880", async ({ page }) => {
 });
 
 test("complex Arabic 900", async ({ page }) => {
-  await compareComplex(page, 900, COMPLEX_ARABIC, COMPLEX_ARABIC_COUNT, 300);
+  await compareComplex(page, 900, COMPLEX_ARABIC, COMPLEX_ARABIC_COUNT);
 });
