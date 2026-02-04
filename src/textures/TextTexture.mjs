@@ -498,7 +498,7 @@ export default class TextTexture extends Texture {
         if (this.lineHeight !== null) parts.push("lh" + this.lineHeight);
         if (this.textBaseline !== "alphabetic") parts.push("tb" + this.textBaseline);
         if (this.textAlign !== "left") parts.push("ta" + this.textAlign);
-        if (this.verticalAlign !== "top") parts.push("va" + this.verticalAlign);
+        if (this.verticalAlign !== "middle") parts.push("va" + this.verticalAlign);
         if (this.offsetY !== null) parts.push("oy" + this.offsetY);
         if (this.maxLines !== 0) parts.push("ml" + this.maxLines);
         if (this.maxLinesSuffix !== "..") parts.push("ms" + this.maxLinesSuffix);
@@ -599,7 +599,7 @@ export default class TextTexture extends Texture {
         if (this.lineHeight !== null) nonDefaults["lineHeight"] = this.lineHeight;
         if (this.textBaseline !== "alphabetic") nonDefaults["textBaseline"] = this.textBaseline;
         if (this.textAlign !== "left") nonDefaults["textAlign"] = this.textAlign;
-        if (this.verticalAlign !== "top") nonDefaults["verticalAlign"] = this.verticalAlign;
+        if (this.verticalAlign !== "middle") nonDefaults["verticalAlign"] = this.verticalAlign;
         if (this.offsetY !== null) nonDefaults["offsetY"] = this.offsetY;
         if (this.maxLines !== 0) nonDefaults["maxLines"] = this.maxLines;
         if (this.maxLinesSuffix !== "..") nonDefaults["maxLinesSuffix"] = this.maxLinesSuffix;
@@ -694,7 +694,7 @@ proto._textOverflow = "";
 proto._lineHeight = null;
 proto._textBaseline = "alphabetic";
 proto._textAlign = "left";
-proto._verticalAlign = "top";
+proto._verticalAlign = "middle";
 proto._offsetY = null;
 proto._maxLines = 0;
 proto._maxLinesSuffix = "..";
