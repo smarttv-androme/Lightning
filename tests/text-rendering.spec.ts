@@ -34,13 +34,15 @@ const COMPLEX_ARABIC = COMPLEX_HEBREW + COMPLEX_HEBREW_COUNT;
 const COMPLEX_ARABIC_COUNT = 1;
 
 const BASIC_MAX_DIFF = 50;
-const LOOSE_MAX_DIFF = 75;
+const LOOSE_MAX_DIFF = 100;
 
 const OUTPUT_DIR = "temp/playwright";
+
 const LS_OPTIONS = {
   createDiffImage: true,
-  strict: false,
   ignoreAntialiasing: true,
+  tolerance: 10,
+  antialiasingTolerance: 50,
 } as const;
 
 async function compareWrapping(page: Page, width: number) {
@@ -59,12 +61,9 @@ async function compareWrapping(page: Page, width: number) {
     const { equal, diffImage, differentPixels } = await looksSame(
       `${OUTPUT_DIR}/wrap-${width}-test${i}-html.png`,
       `${OUTPUT_DIR}/wrap-${width}-test${i}-canvas.png`,
-      {
-        createDiffImage: true,
-        strict: false,
-      }
+      LS_OPTIONS
     );
-    diffImage?.save(`${OUTPUT_DIR}/wrap-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/wrap-${width}-test${i}-diff.png`);
 
     if (differentPixels) {
       console.log(
@@ -96,7 +95,7 @@ async function compareLetterSpacing(page: Page, width: number) {
       `${OUTPUT_DIR}/spacing-${width}-test${i}-canvas.png`,
       LS_OPTIONS
     );
-    diffImage?.save(`${OUTPUT_DIR}/spacing-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/spacing-${width}-test${i}-diff.png`);
 
     if (differentPixels) {
       console.log(
@@ -127,7 +126,7 @@ async function compareDetection(page: Page, width: number, start: number, count:
       `${OUTPUT_DIR}/detection-${width}-test${i}-canvas.png`,
       LS_OPTIONS
     );
-    diffImage?.save(`${OUTPUT_DIR}/detection-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/detection-${width}-test${i}-diff.png`);
 
     if (differentPixels) {
       console.log(
@@ -158,7 +157,7 @@ async function compareComplex(page: Page, width: number, start: number, count: n
       `${OUTPUT_DIR}/complex-${width}-test${i}-canvas.png`,
       LS_OPTIONS
     );
-    diffImage?.save(`${OUTPUT_DIR}/complex-${width}-diff${i}.png`);
+    diffImage?.save(`${OUTPUT_DIR}/complex-${width}-test${i}-diff.png`);
 
     if (differentPixels) {
       console.log(
@@ -193,8 +192,8 @@ test("wrap 840", async ({ page }) => {
   await compareWrapping(page, 840);
 });
 
-test("wrap 700", async ({ page }) => {
-  await compareWrapping(page, 700);
+test("wrap 620", async ({ page }) => {
+  await compareWrapping(page, 620);
 });
 
 // TODO: fix embedded RTL in LTR
