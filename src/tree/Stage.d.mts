@@ -288,6 +288,12 @@ declare namespace Stage {
   }
 }
 
+interface FontMetric {
+  baseline_ratio?: number;
+  descent_ratio?: number;
+  cap_ratio?: number;
+}
+
 /**
  * Application render tree
  */
@@ -309,6 +315,11 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
   rectangleTexture: RectangleTexture;
   textureManager: TextureManager;
   transitions: TransitionManager;
+
+  /**
+   * Custom params for font rendering
+   */
+  fontMetrics?: FontMetric[];
 
   /**
    * Constructor for Stage

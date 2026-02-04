@@ -447,6 +447,11 @@ declare namespace TextTexture {
      * @see
      */
     advancedRenderer?: boolean;
+
+    /**
+     * Centers the text vertically on the capital letters (like H,F,2)
+     */
+    centerOnCaps?: boolean;
   }
 }
 
@@ -578,6 +583,9 @@ declare class TextTexture extends Texture implements Required<Omit<TextTexture.S
 
   get advancedRenderer(): boolean;
   set advancedRenderer(advancedRenderer: boolean);
+
+  get centerOnCaps(): boolean;
+  set centerOnCaps(centerOnCaps: boolean);
 }
 
 export default TextTexture;

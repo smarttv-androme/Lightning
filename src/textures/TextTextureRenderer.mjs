@@ -34,6 +34,11 @@ export default class TextTextureRenderer {
         return this._settings.precision;
     };
 
+    getFontMetrics() {
+        const allFontMetrics = this._stage.fontMetrics;
+        return allFontMetrics?.find(elem => elem.family === this._settings.fontFace);
+    }
+
     setFontProperties() {
         this._context.font = getFontSetting(
             this._settings.fontFace,
@@ -42,7 +47,7 @@ export default class TextTextureRenderer {
             this.getPrecision(),
             this._stage.getOption('defaultFontFace'),
         );
-        this._context.textBaseline = this._settings.textBaseline;
+        this._context.textBaseline = 'alphabetic';
     };
 
     _load() {
@@ -92,7 +97,6 @@ export default class TextTextureRenderer {
         const paddingLeft = this._settings.paddingLeft * precision;
         const paddingRight = this._settings.paddingRight * precision;
         const fontSize = this._settings.fontSize * precision;
-        let offsetY = this._settings.offsetY === null ? null : (this._settings.offsetY * precision);
         let lineHeight = this._settings.lineHeight * precision;
         const w = this._settings.w * precision;
         const h = this._settings.h * precision;
@@ -203,19 +207,38 @@ export default class TextTextureRenderer {
             innerWidth = maxLineWidth;
         }
 
+
+        /**
+         * @type {FontMetric | null}
+         */
+        const fontMetrics = this.getFontMetrics();
+        const baseline_ratio = fontMetrics?.baseline_ratio;
+        const cap_height_ratio = fontMetrics?.cap_ratio;
+        const descent_ratio = fontMetrics?.descent_ratio;
+        const alphabetic_pos_from_top = fontSize * baseline_ratio;
+        const height_based_on_font_metrics = fontSize * (baseline_ratio + descent_ratio);
+
+        let centerOnCapsPadding = 0;
+        if (this._settings.centerOnCaps) {
+            const capitalHeight = fontSize * cap_height_ratio;
+            const space_above_capital = alphabetic_pos_from_top - capitalHeight;
+            const descent = fontSize * descent_ratio
+            centerOnCapsPadding = descent - space_above_capital
+        }
+
+        const fullFontHeight = height_based_on_font_metrics + centerOnCapsPadding;
+        const fontDrawPositionBasedOnFullHeight = alphabetic_pos_from_top + centerOnCapsPadding;
+        renderInfo.fullFontHeight = fullFontHeight;
+        renderInfo.fontDrawPositionBasedOnFullHeight = fontDrawPositionBasedOnFullHeight;
+
         // calculate text height
-        lineHeight = lineHeight || fontSize;
+        lineHeight = lineHeight || fullFontHeight;
 
         let height;
         if (h) {
             height = h;
         } else {
-            const baselineOffset = (this._settings.textBaseline != 'bottom') ? 0.5 * fontSize : 0;
-            height = lineHeight * (lines.length - 1) + baselineOffset + Math.max(lineHeight, fontSize) + offsetY;
-        }
-
-        if (offsetY === null) {
-            offsetY = fontSize;
+            height = lineHeight * (lines.length - 1) + Math.max(lineHeight, fullFontHeight);
         }
 
         renderInfo.w = width;
@@ -234,11 +257,19 @@ export default class TextTextureRenderer {
         }
 
         if (cutSx || cutEx) {
-            width = Math.min(width, cutEx - cutSx);
+            if (cutSx && cutEx) {
+                width = Math.min(width, cutEx - cutSx);
+            } else {
+                width = Math.min(width, width - cutSx);
+            }
         }
 
         if (cutSy || cutEy) {
-            height = Math.min(height, cutEy - cutSy);
+            if (cutSy && cutEy) {
+                height = Math.min(height, cutEy - cutSy);
+            } else {
+                height = Math.min(height, height - cutSy);
+            }
         }
 
         renderInfo.width = width;
@@ -251,7 +282,6 @@ export default class TextTextureRenderer {
         renderInfo.cutEy = cutEy;
         renderInfo.lineHeight = lineHeight;
         renderInfo.lineWidths = lineWidths;
-        renderInfo.offsetY = offsetY;
         renderInfo.paddingLeft = paddingLeft;
         renderInfo.paddingRight = paddingRight;
         renderInfo.letterSpacing = letterSpacing;
@@ -291,13 +321,13 @@ export default class TextTextureRenderer {
         for (let i = 0, n = renderInfo.lines.length; i < n; i++) {
             linePositionX = i === 0 ? renderInfo.textIndent : 0;
 
-            // By default, text is aligned to top
-            linePositionY = (i * renderInfo.lineHeight) + renderInfo.offsetY;
-
-            if (this._settings.verticalAlign == 'middle') {
-                linePositionY += (renderInfo.lineHeight - renderInfo.fontSize) / 2;
-            } else if (this._settings.verticalAlign == 'bottom') {
-                linePositionY += renderInfo.lineHeight - renderInfo.fontSize;
+            linePositionY = (i * renderInfo.lineHeight) + renderInfo.fontDrawPositionBasedOnFullHeight;
+             if (this._settings.verticalAlign === 'top') {
+                // already ok
+            } else if (this._settings.verticalAlign === 'bottom') {
+                linePositionY += renderInfo.lineHeight - renderInfo.fullFontHeight;
+            } else {
+                linePositionY += (renderInfo.lineHeight - renderInfo.fullFontHeight) / 2;
             }
 
             if (this._settings.textAlign === 'right') {
@@ -314,7 +344,7 @@ export default class TextTextureRenderer {
         if (this._settings.highlight) {
             let color = this._settings.highlightColor || 0x00000000;
 
-            let hlHeight = (this._settings.highlightHeight * precision || renderInfo.fontSize * 1.5);
+            let hlHeight = (this._settings.highlightHeight * precision || renderInfo.fullFontHeight);
             const offset = this._settings.highlightOffset * precision;
             const hlPaddingLeft = (this._settings.highlightPaddingLeft !== null ? this._settings.highlightPaddingLeft * precision : renderInfo.paddingLeft);
             const hlPaddingRight = (this._settings.highlightPaddingRight !== null ? this._settings.highlightPaddingRight * precision : renderInfo.paddingRight);
@@ -322,7 +352,7 @@ export default class TextTextureRenderer {
             this._context.fillStyle = StageUtils.getRgbaString(color);
             for (let i = 0; i < drawLines.length; i++) {
                 let drawLine = drawLines[i];
-                this._context.fillRect((drawLine.x - hlPaddingLeft), (drawLine.y - renderInfo.offsetY + offset), (drawLine.w + hlPaddingRight + hlPaddingLeft), hlHeight);
+                this._context.fillRect((drawLine.x - hlPaddingLeft), (drawLine.y - renderInfo.fontDrawPositionBasedOnFullHeight + offset), (drawLine.w + hlPaddingRight + hlPaddingLeft), hlHeight);
             }
         }
 

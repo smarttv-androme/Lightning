@@ -444,6 +444,17 @@ export default class TextTexture extends Texture {
         }
     }
 
+    get centerOnCaps() {
+        return this._centerOnCaps;
+    }
+
+    set centerOnCaps(v) {
+        if (this._centerOnCaps !== v) {
+            this._centerOnCaps = v;
+            this._changed();
+        }
+    }
+
     set letterSpacing(v) {
         if (this._letterSpacing !== v) {
             this._letterSpacing = v;
@@ -526,6 +537,8 @@ export default class TextTexture extends Texture {
         if (this.cutEy) parts.push("cey" + this.cutEy);
 
         if (this.advancedRenderer) parts.push("aR" + this.advancedRenderer ? 1 : 0);
+
+        if (this.centerOnCaps) parts.push("centerCaps" + this.centerOnCaps ? 1 : 0);
 
         let id = "TX$" + parts.join("|") + ":" + this.text;
         return id;
@@ -627,6 +640,8 @@ export default class TextTexture extends Texture {
         if (this.cutEy) nonDefaults["cutEy"] = this.cutEy;
 
         if (this.advancedRenderer) nonDefaults["renderer"] = this.advancedRenderer;
+
+        if (this.centerOnCaps) nonDefaults["centerOnCaps"] = this.centerOnCaps;
         return nonDefaults;
     }
 
@@ -672,6 +687,7 @@ export default class TextTexture extends Texture {
         obj.cutSy = this._cutSy;
         obj.cutEy = this._cutEy;
         obj.advancedRenderer = this._advancedRenderer;
+        obj.centerOnCaps = this._centerOnCaps;
         return obj;
     }
 
@@ -720,6 +736,7 @@ proto._cutSy = 0;
 proto._cutEy = 0;
 proto._advancedRenderer = false;
 proto._fontBaselineRatio = 0;
+proto._centerOnCaps = true;
 
 
 import TextTextureRenderer from "./TextTextureRenderer.mjs";
