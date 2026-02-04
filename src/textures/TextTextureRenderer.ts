@@ -49,6 +49,8 @@ export default class TextTextureRenderer {
     this._stage = stage;
     this._canvas = canvas;
     this._context = this._canvas.getContext("2d")!;
+    const dpr = stage.getOption("devicePixelRatio") || 1;
+    this._context.setTransform(dpr, 0, 0, dpr, 0, 0);
     this._settings = settings;
   }
 
