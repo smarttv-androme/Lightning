@@ -43,7 +43,7 @@ export default class TextTextureRendererAdvanced {
             this._stage.getOption('defaultFontFace')
         );
         this._context.font = font;
-        this._context.textBaseline = this._settings.textBaseline;
+        this._context.textBaseline = 'alphabetic';
         return font;
     };
 
@@ -94,10 +94,9 @@ export default class TextTextureRendererAdvanced {
         const paddingLeft = this._settings.paddingLeft * precision;
         const paddingRight = this._settings.paddingRight * precision;
         const fontSize = this._settings.fontSize * precision;
-        // const offsetY = this._settings.offsetY === null ? null : (this._settings.offsetY * precision);
-        const lineHeight = this._settings.lineHeight * precision || fontSize;
+        let lineHeight = this._settings.lineHeight * precision;
         const w = this._settings.w != 0 ? this._settings.w * precision : this._stage.getOption('w');
-        // const h = this._settings.h * precision;
+        const h = this._settings.h * precision;
         const wordWrapWidth = this._settings.wordWrapWidth * precision;
         const cutSx = this._settings.cutSx * precision;
         const cutEx = this._settings.cutEx * precision;
@@ -114,7 +113,6 @@ export default class TextTextureRendererAdvanced {
         renderInfo.precision = precision;
         renderInfo.fontSize = fontSize;
         renderInfo.fontBaselineRatio = this._settings.fontBaselineRatio;
-        renderInfo.lineHeight = lineHeight;
         renderInfo.letterSpacing = letterSpacing;
         renderInfo.textAlign = this._settings.textAlign;
         renderInfo.textColor = this._settings.textColor;
@@ -197,12 +195,38 @@ export default class TextTextureRendererAdvanced {
         }
         renderInfo.lineNum = lineNo + 1;
 
-        if (this._settings.h) {
-            renderInfo.h = this._settings.h;
+        const fontMetrics = this._getFontMetrics();
+        if (fontMetrics) {
+            const baseline_ratio = fontMetrics.baseline_ratio;
+            const cap_height_ratio = fontMetrics.cap_ratio;
+            const descent_ratio = fontMetrics.descent_ratio;
+
+            const alphabetic_pos_from_top = fontSize * baseline_ratio;
+            const height_based_on_font_metrics = fontSize * (baseline_ratio + descent_ratio);
+
+            let centerOnCapsPadding = 0;
+            if (this._settings.centerOnCaps) {
+                const capitalHeight = fontSize * cap_height_ratio;
+                const space_above_capital = alphabetic_pos_from_top - capitalHeight;
+                const descent = fontSize * descent_ratio
+                centerOnCapsPadding = descent - space_above_capital
+            }
+
+            const fullFontHeight = height_based_on_font_metrics + centerOnCapsPadding;
+            const fontDrawPositionBasedOnFullHeight = alphabetic_pos_from_top + centerOnCapsPadding;
+            renderInfo.fullFontHeight = fullFontHeight;
+            renderInfo.fontDrawPositionBasedOnFullHeight = fontDrawPositionBasedOnFullHeight;
+        }
+
+        lineHeight = lineHeight || renderInfo.fullFontHeight;
+        renderInfo.lineHeight = lineHeight;
+
+        if (h) {
+            renderInfo.h = h;
         } else if (renderInfo.maxLines && renderInfo.maxLines < renderInfo.lineNum) {
-            renderInfo.h = renderInfo.maxLines * renderInfo.lineHeight + fontSize / 2;
+            renderInfo.h = lineHeight * (renderInfo.maxLines - 1) + Math.max(lineHeight, renderInfo.fullFontHeight);
         } else {
-            renderInfo.h = renderInfo.lineNum * renderInfo.lineHeight + fontSize / 2;
+            renderInfo.h = lineHeight * (renderInfo.lineNum - 1) + Math.max(lineHeight, renderInfo.fullFontHeight);
         }
 
         // This calculates the baseline offset in pixels from the font size.
@@ -214,22 +238,22 @@ export default class TextTextureRendererAdvanced {
         const baselineOffsetInPx = renderInfo.fontBaselineRatio * renderInfo.fontSize;
 
         // Vertical align
-        let vaOffset = 0;
-        if (renderInfo.verticalAlign == 'top' && this._context.textBaseline == 'alphabetic') {
-            vaOffset = -baselineOffsetInPx;
-        } else if (renderInfo.verticalAlign == 'middle') {
-            vaOffset = (renderInfo.lineHeight - renderInfo.fontSize - baselineOffsetInPx) / 2;
-        } else if (this._settings.verticalAlign == 'bottom') {
-            vaOffset = renderInfo.lineHeight - renderInfo.fontSize;
-        }
 
         // Calculate lines information
         renderInfo.lines = []
         for (let i = 0; i < renderInfo.lineNum; i++) {
+            let linePositionY = (i * renderInfo.lineHeight) + renderInfo.fontDrawPositionBasedOnFullHeight;
+             if (this._settings.verticalAlign === 'top') {
+                // already ok
+            } else if (this._settings.verticalAlign === 'bottom') {
+                linePositionY += renderInfo.lineHeight - renderInfo.fullFontHeight;
+            } else {
+                linePositionY += (renderInfo.lineHeight - renderInfo.fullFontHeight) / 2;
+            }
             renderInfo.lines[i] = {
                 width: 0,
                 x: 0,
-                y: renderInfo.lineHeight * i + vaOffset,
+                y: linePositionY,
                 text: [],
             }
         }
@@ -261,7 +285,7 @@ export default class TextTextureRendererAdvanced {
             l.width = l.text.reduce((acc, t) => acc + t.width, 0);
         }
 
-        renderInfo.width = this._settings.w != 0 ? this._settings.w * precision : Math.max(...renderInfo.lines.map((l) => l.width)) + paddingRight;
+        renderInfo.width = this._settings.w != 0 ? this._settings.w * precision : Math.max(...renderInfo.lines.map((l) => l.width)) + paddingLeft + paddingRight;
         renderInfo.w = renderInfo.width;
 
         // Apply maxLinesSuffix
@@ -280,7 +304,7 @@ export default class TextTextureRendererAdvanced {
 
             const spl = suffix.length + 1
             let _w = lastLineText.reduce((acc, t) => acc + t.width, 0);
-            while (_w > renderInfo.width || isSpace(lastLineText[lastLineText.length - spl].text)) {
+            while (_w > renderInfo.width || isSpace(lastLineText[lastLineText.length - spl]?.text)) {
                 lastLineText.splice(lastLineText.length - spl, 1);
                 _w = lastLineText.reduce((acc, t) => acc + t.width, 0);
                 if (lastLineText.length < spl) {
@@ -344,7 +368,7 @@ export default class TextTextureRendererAdvanced {
         // Highlight
         if (renderInfo.highlight) {
             const hlColor = renderInfo.highlightColor || 0x00000000;
-            const hlHeight = renderInfo.highlightHeight ? renderInfo.highlightHeight * precision :  renderInfo.fontSize * 1.5;
+            const hlHeight = renderInfo.highlightHeight ? renderInfo.highlightHeight * precision :  renderInfo.fullFontHeight;
             const hlOffset = renderInfo.highlightOffset ? renderInfo.highlightOffset * precision : 0;
             const hlPaddingLeft = (renderInfo.highlightPaddingLeft !== null ? renderInfo.highlightPaddingLeft * precision : renderInfo.paddingLeft);
             const hlPaddingRight = (renderInfo.highlightPaddingRight !== null ? renderInfo.highlightPaddingRight * precision : renderInfo.paddingRight);
@@ -353,7 +377,7 @@ export default class TextTextureRendererAdvanced {
             const lineNum = renderInfo.maxLines ? Math.min(renderInfo.maxLines, renderInfo.lineNum) : renderInfo.lineNum;
             for (let i = 0; i < lineNum; i++) {
                 const l = renderInfo.lines[i];
-                this._context.fillRect(l.x - hlPaddingLeft + paddingLeft, l.y + hlOffset, l.width + hlPaddingLeft + hlPaddingRight, hlHeight);
+                this._context.fillRect(l.x - hlPaddingLeft + paddingLeft, l.y - renderInfo.fontDrawPositionBasedOnFullHeight + hlOffset, l.width + hlPaddingLeft + hlPaddingRight, hlHeight);
             }
         }
 
@@ -395,13 +419,13 @@ export default class TextTextureRendererAdvanced {
                 if (t.letters) {
                     for (let l of t.letters) {
                         const _x = renderInfo.lines[t.lineNo].x + t.x + lx;
-                        this._context.fillText(l.text, _x, renderInfo.lines[t.lineNo].y + renderInfo.fontSize);
+                        this._context.fillText(l.text, _x, renderInfo.lines[t.lineNo].y);
                         lx += l.width;
                     }
                 // Standard drawing
                 } else {
                     const _x = renderInfo.lines[t.lineNo].x + t.x;
-                    this._context.fillText(t.text, _x, renderInfo.lines[t.lineNo].y + renderInfo.fontSize);
+                    this._context.fillText(t.text, _x, renderInfo.lines[t.lineNo].y);
                 }
             }
         }
@@ -679,5 +703,19 @@ export default class TextTextureRendererAdvanced {
             prevWidth = word.width;
         }
 
+    }
+
+    /**
+     * @return {Stage.FontMetrics | undefined}
+     */
+    _getFontMetrics() {
+        const fontMetrics = this._stage.fontMetrics[this._settings.fontFace];
+
+        if (!fontMetrics) {
+            console.warn(`[Lightning] No font metrics found for font '${this._settings.fontFace}'!`);
+            return undefined;
+        }
+
+        return fontMetrics
     }
 }
