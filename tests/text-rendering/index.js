@@ -62,7 +62,7 @@ async function demo() {
   );
   await renderText(
     TextTextureRenderer,
-    "One first line of some rather long text.\nAnd another quite long line; maybe longer!"
+    "One first line of rather long text.\nAnd another quite long line; maybe longer!"
   );
 
   // styled rendering
