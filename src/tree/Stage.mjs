@@ -171,7 +171,7 @@ export default class Stage extends EventEmitter {
     _setOptions(o) {
         this._options = {};
 
-        let opt = (name, def) => {
+        const opt = (name, def) => {
             let value = o[name];
 
             if (value === undefined) {
@@ -316,7 +316,7 @@ export default class Stage extends EventEmitter {
             this._updateSourceTextures.forEach(texture => {
                 texture._performUpdateSource();
             });
-            this._updateSourceTextures = new Set();
+            this._updateSourceTextures.clear();
         }
     }
 
@@ -336,12 +336,6 @@ export default class Stage extends EventEmitter {
         this.emit('frameStart');
         this._performUpdateSource();
         this.emit('update');
-    }
-
-    idleFrame() {
-        this.textureThrottler.processSome();
-        this.emit('frameEnd');
-        this.frameCounter++;
     }
 
     onIdle() {
@@ -367,6 +361,8 @@ export default class Stage extends EventEmitter {
         this.emit('frameEnd');
 
         this.frameCounter++;
+
+        return changes;
     }
 
     isUpdatingFrame() {
