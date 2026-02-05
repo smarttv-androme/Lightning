@@ -160,7 +160,9 @@ window.attachInspector = function({Application, Element, ElementCore, Stage, Com
                                 if (!f[3]) c["colorBr"] = pv;
                                 break;
                             default:
-                                c[rn] = pv;
+                                if (c[rn] !== pv) { // prevent infinite update loop
+                                    c[rn] = pv;
+                                }
                         }
 
                         // Set final value, not the transitioned value.
@@ -352,7 +354,11 @@ window.attachInspector = function({Application, Element, ElementCore, Stage, Com
         },
         set: function(v) {
             if (this.$x !== v) {
-                val(this, 'x', v, 0);
+                if (this.hasFlexLayout()) {
+                    val(this, 'x', this.layout.originalX, 0); // show non computed value
+                } else {
+                    val(this, 'x', v, 0);
+                }
                 this.$x = v;
                 this.updateLeft();
             }
@@ -366,7 +372,11 @@ window.attachInspector = function({Application, Element, ElementCore, Stage, Com
         },
         set: function(v) {
             if (this.$y !== v) {
-                val(this, 'y', v, 0);
+                if (this.hasFlexLayout()) {
+                    val(this, 'y', this.layout.originalY, 0); // show non computed value
+                } else {
+                    val(this, 'y', v, 0);
+                }
                 this.$y = v;
                 this.updateTop();
             }
