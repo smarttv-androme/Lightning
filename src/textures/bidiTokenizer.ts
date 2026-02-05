@@ -26,7 +26,7 @@ type Direction = 'lri' | 'rli' | 'fsi' | 'default';
 
 // https://www.unicode.org/reports/tr9/
 const reZeroWidthSpace = /[\u200B\u200E\u200F\u061C]/;
-const reDirectionalFormat = /[\u202A\u202B\u202C\u202D\u202E\u202E\u2066\u2067\u2068\u2069]/;
+const reDirectionalFormat = /[\u202A\u202B\u202C\u202D\u202E\u2066\u2067\u2068\u2069]/;
 
 const LRI = '\u2066'; // Left-to-Right Isolate ('ltr')
 const RLI = '\u2067'; // Right-to-Left Isolate ('rtl')

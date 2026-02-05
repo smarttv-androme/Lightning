@@ -76,7 +76,7 @@ class TextTokenizer {
     // - first, matching all characters between space (32) and ~ (127)
     // - second, matching all unicode quotation marks (see https://hexdocs.pm/ex_unicode/Unicode.Category.QuoteMarks.html)
     // - third, matching the unicode en/em dashes (see https://en.wikipedia.org/wiki/Dash#Unicode)
-    return text.charAt(0) <= 'z' && !/[^ -~'-›–—]/.test(text);
+    return text.charAt(0) <= 'z' && !/[^ -~\u2018-\u201F\u2039\u203A\u2013\u2014]/.test(text);
   }
 
   /**
