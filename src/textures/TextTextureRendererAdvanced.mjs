@@ -339,12 +339,20 @@ export default class TextTextureRendererAdvanced {
         // Set canvas dimensions
         let canvasWidth = renderInfo.w || renderInfo.width;
         if (renderInfo.cutSx || renderInfo.cutEx) {
-            canvasWidth = Math.min(renderInfo.w, renderInfo.cutEx - renderInfo.cutSx);
+            if (renderInfo.cutSx && renderInfo.cutEx) {
+                canvasWidth = Math.min(renderInfo.w, renderInfo.cutEx - renderInfo.cutSx);
+            } else {
+                canvasWidth = Math.min(renderInfo.w, renderInfo.w - renderInfo.cutSx);
+            }
         }
 
         let canvasHeight = renderInfo.h;
         if (renderInfo.cutSy || renderInfo.cutEy) {
-            canvasHeight = Math.min(renderInfo.h, renderInfo.cutEy - renderInfo.cutSy);
+            if (renderInfo.cutSy && renderInfo.cutEy) {
+                canvasHeight = Math.min(renderInfo.h, renderInfo.cutEy - renderInfo.cutSy);
+            } else {
+                canvasHeight = Math.min(renderInfo.h, renderInfo.h - renderInfo.cutSy);
+            }
         }
 
         this._canvas.width = Math.ceil(canvasWidth + this._stage.getOption('textRenderIssueMargin'));
