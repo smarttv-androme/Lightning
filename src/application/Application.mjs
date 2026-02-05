@@ -307,8 +307,8 @@ export default class Application extends Component {
         // Multiple events.
         for (let i = 0; i < n; i++) {
             const target = path[i];
-            const events = isHorizontalDirection && target.rtl ? eventsRtl : eventsLtr;
-            const event = target._getMostSpecificHandledMember(events);
+            const targetEvents = isHorizontalDirection && target.rtl ? eventsRtl : eventsLtr;
+            const event = target._getMostSpecificHandledMember(targetEvents);
             if (event !== undefined) {
                 const returnValue = target[event](...args);
                 if (returnValue !== false) {

@@ -311,7 +311,6 @@ describe('text', function() {
                     app.children = [element];
                     const texture = app.tag("Item").texture;
                     stage.drawFrame();
-                    console.log(texture.source.renderInfo.lines);
                     chai.assert(texture.source.renderInfo.lines.length === 3);
                     chai.assert(getLineText(texture.source.renderInfo.lines[0]) === 'EXTRA-LONG-WORD');
                 });
@@ -330,7 +329,6 @@ describe('text', function() {
                     app.children = [element];
                     const texture = app.tag("Item").texture;
                     stage.drawFrame();
-                    console.log(texture.source.renderInfo.lines);
                     chai.assert(texture.source.renderInfo.lines.length === 4);
                     chai.assert(getLineText(texture.source.renderInfo.lines[0]) === 'Sit');
                     chai.assert(getLineText(texture.source.renderInfo.lines[1]) === 'EXTRA-LONG-WORD');
@@ -351,7 +349,6 @@ describe('text', function() {
                     app.children = [element];
                     const texture = app.tag("Item").texture;
                     stage.drawFrame();
-                    console.log(texture.source.renderInfo.lines);
                     chai.assert(texture.source.renderInfo.lines.length === 9);
                     chai.assert(getLineText(texture.source.renderInfo.lines[0]) === 'EXTR');
                     chai.assert(getLineText(texture.source.renderInfo.lines[1]) === 'A-LO');
@@ -374,7 +371,6 @@ describe('text', function() {
                     app.children = [element];
                     const texture = app.tag("Item").texture;
                     stage.drawFrame();
-                    console.log(texture.source.renderInfo.lines);
                     chai.assert(texture.source.renderInfo.lines.length === 10);
                     chai.assert(getLineText(texture.source.renderInfo.lines[0]) === 'Sit');
                     chai.assert(getLineText(texture.source.renderInfo.lines[1]) === 'EXTR');
