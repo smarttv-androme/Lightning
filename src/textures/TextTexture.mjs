@@ -169,17 +169,6 @@ export default class TextTexture extends Texture {
         }
     }
 
-    get textBaseline() {
-        return this._textBaseline;
-    }
-
-    set textBaseline(v) {
-        if (this._textBaseline !== v) {
-            this._textBaseline = v;
-            this._changed();
-        }
-    }
-
     get textAlign() {
         return this._textAlign;
     }
@@ -507,7 +496,6 @@ export default class TextTexture extends Texture {
         if (this.wordBreak !== false) parts.push("wb" + this.wordBreak ? 1 : 0);
         if (this.textOverflow != "") parts.push("to" + this.textOverflow);
         if (this.lineHeight !== null) parts.push("lh" + this.lineHeight);
-        if (this.textBaseline !== "alphabetic") parts.push("tb" + this.textBaseline);
         if (this.textAlign !== "left") parts.push("ta" + this.textAlign);
         if (this.verticalAlign !== "middle") parts.push("va" + this.verticalAlign);
         if (this.offsetY !== null) parts.push("oy" + this.offsetY);
@@ -610,7 +598,6 @@ export default class TextTexture extends Texture {
         if (this.wordBreak !== false) nonDefaults["wordBreak"] = this.wordBreak;
         if (this.textOverflow != "") nonDefaults["textOverflow"] = this.textOverflow;
         if (this.lineHeight !== null) nonDefaults["lineHeight"] = this.lineHeight;
-        if (this.textBaseline !== "alphabetic") nonDefaults["textBaseline"] = this.textBaseline;
         if (this.textAlign !== "left") nonDefaults["textAlign"] = this.textAlign;
         if (this.verticalAlign !== "middle") nonDefaults["verticalAlign"] = this.verticalAlign;
         if (this.offsetY !== null) nonDefaults["offsetY"] = this.offsetY;
@@ -659,7 +646,6 @@ export default class TextTexture extends Texture {
         obj.wordBreak = this._wordBreak;
         obj.textOverflow = this._textOverflow;
         obj.lineHeight = this._lineHeight;
-        obj.textBaseline = this._textBaseline;
         obj.textAlign = this._textAlign;
         obj.verticalAlign = this._verticalAlign;
         obj.offsetY = this._offsetY;
@@ -708,7 +694,6 @@ proto._wordWrapWidth = 0;
 proto._wordBreak = false;
 proto._textOverflow = "";
 proto._lineHeight = null;
-proto._textBaseline = "alphabetic";
 proto._textAlign = "left";
 proto._verticalAlign = "middle";
 proto._offsetY = null;

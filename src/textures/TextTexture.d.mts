@@ -163,16 +163,6 @@ declare namespace TextTexture {
      */
     lineHeight?: number | null;
     /**
-     * Text baseline
-     *
-     * @remarks
-     * See [`CanvasRenderingContext2D.textBaseline` (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline)
-     * for the available options.
-     *
-     * @defaultValue `"alphabetic"`
-     */
-    textBaseline?: TextBaseline;
-    /**
      * Horizontal text alignment
      *
      * @defaultValue `"left"`
@@ -499,9 +489,6 @@ declare class TextTexture extends Texture implements Required<Omit<TextTexture.S
 
   get lineHeight(): number;
   set lineHeight(lineHeight: number);
-
-  get textBaseline(): TextTexture.TextBaseline;
-  set textBaseline(textBaseline: TextTexture.TextBaseline);
 
   get textAlign(): TextTexture.TextAlign;
   set textAlign(textAlign: TextTexture.TextAlign);
