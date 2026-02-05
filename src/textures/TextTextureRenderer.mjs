@@ -34,11 +34,6 @@ export default class TextTextureRenderer {
         return this._settings.precision;
     };
 
-    getFontMetrics() {
-        const allFontMetrics = this._stage.fontMetrics;
-        return allFontMetrics?.find(elem => elem.family === this._settings.fontFace);
-    }
-
     setFontProperties() {
         this._context.font = getFontSetting(
             this._settings.fontFace,
@@ -207,38 +202,37 @@ export default class TextTextureRenderer {
             innerWidth = maxLineWidth;
         }
 
+        const fontMetrics = this._getFontMetrics();
+        if (fontMetrics) {
+            const baseline_ratio = fontMetrics.baseline_ratio;
+            const cap_height_ratio = fontMetrics.cap_ratio;
+            const descent_ratio = fontMetrics.descent_ratio;
 
-        /**
-         * @type {FontMetric | null}
-         */
-        const fontMetrics = this.getFontMetrics();
-        const baseline_ratio = fontMetrics?.baseline_ratio;
-        const cap_height_ratio = fontMetrics?.cap_ratio;
-        const descent_ratio = fontMetrics?.descent_ratio;
-        const alphabetic_pos_from_top = fontSize * baseline_ratio;
-        const height_based_on_font_metrics = fontSize * (baseline_ratio + descent_ratio);
+            const alphabetic_pos_from_top = fontSize * baseline_ratio;
+            const height_based_on_font_metrics = fontSize * (baseline_ratio + descent_ratio);
 
-        let centerOnCapsPadding = 0;
-        if (this._settings.centerOnCaps) {
-            const capitalHeight = fontSize * cap_height_ratio;
-            const space_above_capital = alphabetic_pos_from_top - capitalHeight;
-            const descent = fontSize * descent_ratio
-            centerOnCapsPadding = descent - space_above_capital
+            let centerOnCapsPadding = 0;
+            if (this._settings.centerOnCaps) {
+                const capitalHeight = fontSize * cap_height_ratio;
+                const space_above_capital = alphabetic_pos_from_top - capitalHeight;
+                const descent = fontSize * descent_ratio
+                centerOnCapsPadding = descent - space_above_capital
+            }
+
+            const fullFontHeight = height_based_on_font_metrics + centerOnCapsPadding;
+            const fontDrawPositionBasedOnFullHeight = alphabetic_pos_from_top + centerOnCapsPadding;
+            renderInfo.fullFontHeight = fullFontHeight;
+            renderInfo.fontDrawPositionBasedOnFullHeight = fontDrawPositionBasedOnFullHeight;
         }
 
-        const fullFontHeight = height_based_on_font_metrics + centerOnCapsPadding;
-        const fontDrawPositionBasedOnFullHeight = alphabetic_pos_from_top + centerOnCapsPadding;
-        renderInfo.fullFontHeight = fullFontHeight;
-        renderInfo.fontDrawPositionBasedOnFullHeight = fontDrawPositionBasedOnFullHeight;
-
         // calculate text height
-        lineHeight = lineHeight || fullFontHeight;
+        lineHeight = lineHeight || renderInfo.fullFontHeight;
 
         let height;
         if (h) {
             height = h;
         } else {
-            height = lineHeight * (lines.length - 1) + Math.max(lineHeight, fullFontHeight);
+            height = lineHeight * (lines.length - 1) + Math.max(lineHeight, renderInfo.fullFontHeight);
         }
 
         renderInfo.w = width;
@@ -464,4 +458,17 @@ export default class TextTextureRenderer {
         return measureText(this._context, word, space);
     }
 
+    /**
+     * @return {Stage.FontMetrics | undefined}
+     */
+    _getFontMetrics() {
+        const fontMetrics = this._stage.fontMetrics[this._settings.fontFace];
+
+        if (!fontMetrics) {
+            console.warn(`[Lightning] No font metrics found for font '${this._settings.fontFace}'!`);
+            return undefined;
+        }
+
+        return fontMetrics
+    }
 }
