@@ -79,7 +79,6 @@ class MyElementTest extends lng.Component<MyElementTest.TemplateSpec> implements
           wordBreak: true,
           wordWrapWidth: 100,
           lineHeight: 20,
-          textBaseline: 'alphabetic',
           verticalAlign: 'top',
           offsetY: 1,
           maxLines: 1,
