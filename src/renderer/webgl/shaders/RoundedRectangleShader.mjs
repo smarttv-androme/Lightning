@@ -29,6 +29,8 @@ export default class RoundedRectangleShader extends DefaultShader {
         this._fc = 0x00ffffff;
         this._fillColor = this._getNormalizedColor(0xffffffff);
         this._strokeColor = this._getNormalizedColor(0x00ffffff);
+        this._radiusBuffer = new Float32Array(4);
+        this._resolutionBuffer = new Float32Array(2);
     }
 
     set blend(p) {
@@ -137,14 +139,22 @@ export default class RoundedRectangleShader extends DefaultShader {
         super.setupUniforms(operation);
         const owner = operation.shaderOwner;
         const renderPrecision = this.ctx.stage.getRenderPrecision();
-        const _radius = this._radius.map((r) => (r + 0.5) * renderPrecision)
-        this._setUniform('radius', new Float32Array(_radius), this.gl.uniform4fv);
+
+        this._radiusBuffer[0] = (this._radius[0] + 0.5) * renderPrecision;
+        this._radiusBuffer[1] = (this._radius[1] + 0.5) * renderPrecision;
+        this._radiusBuffer[2] = (this._radius[2] + 0.5) * renderPrecision;
+        this._radiusBuffer[3] = (this._radius[3] + 0.5) * renderPrecision;
+
+        this._resolutionBuffer[0] = owner._w * renderPrecision;
+        this._resolutionBuffer[1] = owner._h * renderPrecision;
+
+        this._setUniform('radius', this._radiusBuffer, this.gl.uniform4fv);
         this._setUniform('alpha', operation.getElementCore(0).renderContext.alpha, this.gl.uniform1f);
         this._setUniform('blend', this._blend, this.gl.uniform1f);
         this._setUniform('strokeColor', this._strokeColor, this.gl.uniform4fv);
         this._setUniform('fillColor', this._fillColor, this.gl.uniform4fv);
         this._setUniform('stroke',  this._stroke * renderPrecision, this.gl.uniform1f);
-        this._setUniform('resolution', new Float32Array([owner._w * renderPrecision, owner._h * renderPrecision]), this.gl.uniform2fv);
+        this._setUniform('resolution', this._resolutionBuffer, this.gl.uniform2fv);
     }
 }
 
