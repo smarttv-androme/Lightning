@@ -45,43 +45,8 @@ export default class TextTextureRenderer {
         this._context.textBaseline = 'alphabetic';
     };
 
-    _load() {
-        if (Utils.isWeb && document.fonts) {
-            const fontSetting = getFontSetting(
-                this._settings.fontFace,
-                this._settings.fontStyle,
-                this._settings.fontSize,
-                this.getPrecision(),
-                this._stage.getOption('defaultFontFace')
-            );
-            try {
-                if (!document.fonts.check(fontSetting, this._settings.text)) {
-                    // Use a promise that waits for loading.
-                    return document.fonts.load(fontSetting, this._settings.text).catch(err => {
-                        // Just load the fallback font.
-                        console.warn('[Lightning] Font load error', err, fontSetting);
-                    }).then(() => {
-                        if (!document.fonts.check(fontSetting, this._settings.text)) {
-                            console.warn('[Lightning] Font not found', fontSetting);
-                        }
-                    });
-                }
-            } catch(e) {
-                console.warn("[Lightning] Can't check font loading for " + fontSetting);
-            }
-        }
-    }
-
     draw() {
-        // We do not use a promise so that loading is performed syncronous when possible.
-        const loadPromise = this._load();
-        if (!loadPromise) {
-            return Utils.isSpark ? this._stage.platform.drawText(this) : this._draw();
-        } else {
-            return loadPromise.then(() => {
-                return Utils.isSpark ? this._stage.platform.drawText(this) : this._draw();
-            });
-        }
+        return Utils.isSpark ? this._stage.platform.drawText(this) : this._draw();
     }
 
     _calculateRenderInfo() {
