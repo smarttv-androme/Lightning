@@ -462,7 +462,7 @@ export default class TextTextureRenderer {
      * @return {Stage.FontMetrics | undefined}
      */
     _getFontMetrics() {
-        const fontMetrics = this._stage.fontMetrics[this._settings.fontFace];
+        const fontMetrics = this._stage.fontMetrics[this._settings.fontFace] ?? this._stage.fontMetrics[this._stage.getOption('defaultFontFace')];
 
         if (!fontMetrics) {
             console.warn(`[Lightning] No font metrics found for font '${this._settings.fontFace}'!`);
