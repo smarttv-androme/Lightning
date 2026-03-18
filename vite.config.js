@@ -55,7 +55,7 @@ export default defineConfig(() => {
             '@babel/preset-env',
             {
               targets: {
-                chrome: '39',
+                chrome: '38',
               },
               spec: true,
               debug: false,
@@ -82,6 +82,11 @@ export default defineConfig(() => {
       terserOptions: {
         keep_classnames: true,
         keep_fnames: true,
+      },
+      rollupOptions: {
+        output: {
+          generatedCode: isEs5Build ? 'es5' : undefined, // might not need a if test here, but does not hurt
+        },
       },
       // Disable esbuild for ES5 builds to let Babel handle transpilation
       target: isEs5Build ? false : 'esnext',
