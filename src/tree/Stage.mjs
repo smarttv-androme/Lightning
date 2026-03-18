@@ -108,6 +108,7 @@ export default class Stage extends EventEmitter {
 
         this.frameCounter = 0;
 
+        this.fontMetrics = {};
         this.transitions = new TransitionManager(this);
         this.animations = new AnimationManager(this);
 

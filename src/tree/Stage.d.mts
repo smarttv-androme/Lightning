@@ -287,6 +287,14 @@ declare namespace Stage {
     frameEnd: () => void;
     idle: () => void;
   }
+
+  export interface FontMetrics {
+    baseline_ratio: number;
+    descent_ratio: number;
+    cap_ratio: number;
+  }
+
+  export type FontMetricsMap = { [font: string]: FontMetrics };
 }
 
 /**
@@ -310,6 +318,11 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
   rectangleTexture: RectangleTexture;
   textureManager: TextureManager;
   transitions: TransitionManager;
+
+  /**
+   * A map of font names to their respective font metrics
+   */
+  fontMetrics: Stage.FontMetricsMap;
 
   /**
    * Constructor for Stage

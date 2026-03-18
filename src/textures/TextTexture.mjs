@@ -172,17 +172,6 @@ export default class TextTexture extends Texture {
         }
     }
 
-    get textBaseline() {
-        return this._textBaseline;
-    }
-
-    set textBaseline(v) {
-        if (this._textBaseline !== v) {
-            this._textBaseline = v;
-            this._changed();
-        }
-    }
-
     get textAlign() {
         return this._textAlign;
     }
@@ -447,6 +436,17 @@ export default class TextTexture extends Texture {
         }
     }
 
+    get centerOnCaps() {
+        return this._centerOnCaps;
+    }
+
+    set centerOnCaps(v) {
+        if (this._centerOnCaps !== v) {
+            this._centerOnCaps = v;
+            this._changed();
+        }
+    }
+
     set letterSpacing(v) {
         if (this._letterSpacing !== v) {
             this._letterSpacing = v;
@@ -510,9 +510,8 @@ export default class TextTexture extends Texture {
         if (this.wordBreak !== false) parts.push("wb" + this.wordBreak ? 1 : 0);
         if (this.textOverflow != "") parts.push("to" + this.textOverflow);
         if (this.lineHeight !== null) parts.push("lh" + this.lineHeight);
-        if (this.textBaseline !== "alphabetic") parts.push("tb" + this.textBaseline);
         if (this.textAlign !== "left") parts.push("ta" + this.textAlign);
-        if (this.verticalAlign !== "top") parts.push("va" + this.verticalAlign);
+        if (this.verticalAlign !== "middle") parts.push("va" + this.verticalAlign);
         if (this.offsetY !== null) parts.push("oy" + this.offsetY);
         if (this.maxLines !== 0) parts.push("ml" + this.maxLines);
         if (this.maxLinesSuffix !== "..") parts.push("ms" + this.maxLinesSuffix);
@@ -541,6 +540,8 @@ export default class TextTexture extends Texture {
         if (this.cutEy) parts.push("cey" + this.cutEy);
 
         if (this.advancedRenderer) parts.push("aR" + this.advancedRenderer ? 1 : 0);
+
+        if (this.centerOnCaps) parts.push("centerCaps" + this.centerOnCaps ? 1 : 0);
 
         let id = "TX$" + parts.join("|") + ":" + this.text;
         return id;
@@ -610,9 +611,8 @@ export default class TextTexture extends Texture {
         if (this.wordBreak !== false) nonDefaults["wordBreak"] = this.wordBreak;
         if (this.textOverflow != "") nonDefaults["textOverflow"] = this.textOverflow;
         if (this.lineHeight !== null) nonDefaults["lineHeight"] = this.lineHeight;
-        if (this.textBaseline !== "alphabetic") nonDefaults["textBaseline"] = this.textBaseline;
         if (this.textAlign !== "left") nonDefaults["textAlign"] = this.textAlign;
-        if (this.verticalAlign !== "top") nonDefaults["verticalAlign"] = this.verticalAlign;
+        if (this.verticalAlign !== "middle") nonDefaults["verticalAlign"] = this.verticalAlign;
         if (this.offsetY !== null) nonDefaults["offsetY"] = this.offsetY;
         if (this.maxLines !== 0) nonDefaults["maxLines"] = this.maxLines;
         if (this.maxLinesSuffix !== "..") nonDefaults["maxLinesSuffix"] = this.maxLinesSuffix;
@@ -641,6 +641,8 @@ export default class TextTexture extends Texture {
         if (this.cutEy) nonDefaults["cutEy"] = this.cutEy;
 
         if (this.advancedRenderer) nonDefaults["renderer"] = this.advancedRenderer;
+
+        if (this.centerOnCaps) nonDefaults["centerOnCaps"] = this.centerOnCaps;
         return nonDefaults;
     }
 
@@ -658,7 +660,6 @@ export default class TextTexture extends Texture {
         obj.wordBreak = this._wordBreak;
         obj.textOverflow = this._textOverflow;
         obj.lineHeight = this._lineHeight;
-        obj.textBaseline = this._textBaseline;
         obj.textAlign = this._textAlign;
         obj.verticalAlign = this._verticalAlign;
         obj.offsetY = this._offsetY;
@@ -687,6 +688,7 @@ export default class TextTexture extends Texture {
         obj.cutSy = this._cutSy;
         obj.cutEy = this._cutEy;
         obj.advancedRenderer = this._advancedRenderer;
+        obj.centerOnCaps = this._centerOnCaps;
         return obj;
     }
 
@@ -707,9 +709,8 @@ proto._wordWrapWidth = 0;
 proto._wordBreak = false;
 proto._textOverflow = "";
 proto._lineHeight = null;
-proto._textBaseline = "alphabetic";
 proto._textAlign = "left";
-proto._verticalAlign = "top";
+proto._verticalAlign = "middle";
 proto._offsetY = null;
 proto._maxLines = 0;
 proto._maxLinesSuffix = "..";
@@ -736,6 +737,7 @@ proto._cutSy = 0;
 proto._cutEy = 0;
 proto._advancedRenderer = false;
 proto._fontBaselineRatio = 0;
+proto._centerOnCaps = true;
 
 
 import TextTextureRenderer from "./TextTextureRenderer.js";

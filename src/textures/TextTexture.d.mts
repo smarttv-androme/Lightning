@@ -171,16 +171,6 @@ declare namespace TextTexture {
      */
     lineHeight?: number | null;
     /**
-     * Text baseline
-     *
-     * @remarks
-     * See [`CanvasRenderingContext2D.textBaseline` (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline)
-     * for the available options.
-     *
-     * @defaultValue `"alphabetic"`
-     */
-    textBaseline?: TextBaseline;
-    /**
      * Horizontal text alignment
      *
      * @defaultValue `"left"`
@@ -455,6 +445,11 @@ declare namespace TextTexture {
      * @see
      */
     advancedRenderer?: boolean;
+
+    /**
+     * Centers the text vertically on the capital letters (like H,F,2)
+     */
+    centerOnCaps?: boolean;
   }
 }
 
@@ -508,9 +503,6 @@ declare class TextTexture extends Texture implements Required<Omit<TextTexture.S
 
   get lineHeight(): number;
   set lineHeight(lineHeight: number);
-
-  get textBaseline(): TextTexture.TextBaseline;
-  set textBaseline(textBaseline: TextTexture.TextBaseline);
 
   get textAlign(): TextTexture.TextAlign;
   set textAlign(textAlign: TextTexture.TextAlign);
@@ -592,6 +584,9 @@ declare class TextTexture extends Texture implements Required<Omit<TextTexture.S
 
   get advancedRenderer(): boolean;
   set advancedRenderer(advancedRenderer: boolean);
+
+  get centerOnCaps(): boolean;
+  set centerOnCaps(centerOnCaps: boolean);
 }
 
 export default TextTexture;

@@ -23,33 +23,41 @@ export default class DefaultShader extends WebGLShader {
 
     enableAttribs() {
         // Enables the attribs in the shader program.
-        let gl = this.gl;
-        gl.vertexAttribPointer(this._attrib("aVertexPosition"), 2, gl.FLOAT, false, 20, 0);
-        gl.enableVertexAttribArray(this._attrib("aVertexPosition"));
+        const gl = this.gl;
+        const aVertexPosition = this._attrib("aVertexPosition");
+        const aTextureCoord = this._attrib("aTextureCoord");
+        const aColor = this._attrib("aColor");
 
-        if (this._attrib("aTextureCoord") !== -1) {
-            gl.vertexAttribPointer(this._attrib("aTextureCoord"), 2, gl.FLOAT, false, 20, 2 * 4);
-            gl.enableVertexAttribArray(this._attrib("aTextureCoord"));
+        gl.vertexAttribPointer(aVertexPosition, 2, gl.FLOAT, false, 20, 0);
+        gl.enableVertexAttribArray(aVertexPosition);
+
+        if (aTextureCoord !== -1) {
+            gl.vertexAttribPointer(aTextureCoord, 2, gl.FLOAT, false, 20, 2 * 4);
+            gl.enableVertexAttribArray(aTextureCoord);
         }
 
-        if (this._attrib("aColor") !== -1) {
+        if (aColor !== -1) {
             // Some shaders may ignore the color.
-            gl.vertexAttribPointer(this._attrib("aColor"), 4, gl.UNSIGNED_BYTE, true, 20, 4 * 4);
-            gl.enableVertexAttribArray(this._attrib("aColor"));
+            gl.vertexAttribPointer(aColor, 4, gl.UNSIGNED_BYTE, true, 20, 4 * 4);
+            gl.enableVertexAttribArray(aColor);
         }
     }
 
     disableAttribs() {
         // Disables the attribs in the shader program.
-        let gl = this.gl;
-        gl.disableVertexAttribArray(this._attrib("aVertexPosition"));
+        const gl = this.gl;
+        const aVertexPosition = this._attrib("aVertexPosition");
+        const aTextureCoord = this._attrib("aTextureCoord");
+        const aColor = this._attrib("aColor");
 
-        if (this._attrib("aTextureCoord") !== -1) {
-            gl.disableVertexAttribArray(this._attrib("aTextureCoord"));
+        gl.disableVertexAttribArray(aVertexPosition);
+
+        if (aTextureCoord !== -1) {
+            gl.disableVertexAttribArray(aTextureCoord);
         }
 
-        if (this._attrib("aColor") !== -1) {
-            gl.disableVertexAttribArray(this._attrib("aColor"));
+        if (aColor !== -1) {
+            gl.disableVertexAttribArray(aColor);
         }
     }
 
@@ -74,7 +82,7 @@ export default class DefaultShader extends WebGLShader {
                     pos = i;
                 }
             }
-            
+
             gl.bindTexture(gl.TEXTURE_2D, glTexture);
             gl.drawElements(gl.TRIANGLES, 6 * (length - pos), gl.UNSIGNED_SHORT, (pos + operation.index) * 6 * 2);
         }
