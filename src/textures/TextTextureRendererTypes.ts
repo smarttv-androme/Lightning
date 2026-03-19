@@ -90,6 +90,8 @@ export interface IRenderInfo {
   paddingRight: number;
   letterSpacing: number;
   textIndent: number;
+  fullFontHeight: number;
+  fontDrawPositionBasedOnFullHeight: number;
 }
 
 /**

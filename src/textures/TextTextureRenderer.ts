@@ -60,49 +60,11 @@ export default class TextTextureRenderer {
       this._stage.getRenderPrecision(),
       this._stage.getOption("defaultFontFace")
     );
-    this._context.textBaseline = this._settings.textBaseline;
-  }
-
-  _load() {
-    if (/*Utils.isWeb &&*/ document.fonts) {
-      const fontSetting = getFontSetting(
-        this._settings.fontFace,
-        this._settings.fontStyle,
-        this._settings.fontSize,
-        this._stage.getRenderPrecision(),
-        this._stage.getOption("defaultFontFace")
-      );
-      try {
-        if (!document.fonts.check(fontSetting, this._settings.text)) {
-          // Use a promise that waits for loading.
-          return document.fonts
-            .load(fontSetting, this._settings.text)
-            .catch((err) => {
-              // Just load the fallback font.
-              console.warn("[Lightning] Font load error", err, fontSetting);
-            })
-            .then(() => {
-              if (!document.fonts.check(fontSetting, this._settings.text)) {
-                console.warn("[Lightning] Font not found", fontSetting);
-              }
-            });
-        }
-      } catch (e) {
-        console.warn("[Lightning] Can't check font loading for " + fontSetting);
-      }
-    }
+    this._context.textBaseline = 'alphabetic';
   }
 
   draw() {
-    // We do not use a promise so that loading is performed syncronous when possible.
-    const loadPromise = this._load();
-    if (!loadPromise) {
-      return /*Utils.isSpark ? this._stage.platform.drawText(this) :*/ this._draw();
-    } else {
-      return loadPromise.then(() => {
-        return /*Utils.isSpark ? this._stage.platform.drawText(this) :*/ this._draw();
-      });
-    }
+    return /*Utils.isSpark ? this._stage.platform.drawText(this) :*/ this._draw();
   }
 
   _calculateRenderInfo(): IRenderInfo {
@@ -112,11 +74,7 @@ export default class TextTextureRenderer {
     const paddingLeft = this._settings.paddingLeft * precision;
     const paddingRight = this._settings.paddingRight * precision;
     const fontSize = this._settings.fontSize * precision;
-    let offsetY =
-      this._settings.offsetY === null
-        ? null
-        : this._settings.offsetY * precision;
-    let lineHeight = (this._settings.lineHeight || fontSize) * precision;
+    let lineHeight = this._settings.lineHeight ? this._settings.lineHeight * precision: null;
     const w = this._settings.w * precision;
     const h = this._settings.h * precision;
     let wordWrapWidth = this._settings.wordWrapWidth * precision;
@@ -191,32 +149,50 @@ export default class TextTextureRenderer {
       innerWidth = maxLineWidth;
     }
 
-    // calculate canvas height
-    const textBaseline = this._settings.textBaseline;
-    const verticalAlign = this._settings.verticalAlign;
-    let height;
-    if (h) {
-      height = h;
-    } else {
-      const baselineOffset =
-        this._settings.textBaseline !== "bottom" ? fontSize * 0.5 : 0;
-      height =
-        lineHeight * (lines.length - 1) +
-        baselineOffset +
-        Math.max(lineHeight, fontSize) +
-        (offsetY || 0);
+    const fontMetrics = this._getFontMetrics();
+    let fullFontHeight = 0;
+    let fontDrawPositionBasedOnFullHeight = 0;
+    if (fontMetrics) {
+        const baseline_ratio = fontMetrics.baseline_ratio;
+        const cap_height_ratio = fontMetrics.cap_ratio;
+        const descent_ratio = fontMetrics.descent_ratio;
+
+        const alphabetic_pos_from_top = fontSize * baseline_ratio;
+        const height_based_on_font_metrics = fontSize * (baseline_ratio + descent_ratio);
+
+        let centerOnCapsPadding = 0;
+        if (this._settings.centerOnCaps) {
+            const capitalHeight = fontSize * cap_height_ratio;
+            const space_above_capital = alphabetic_pos_from_top - capitalHeight;
+            const descent = fontSize * descent_ratio
+            centerOnCapsPadding = descent - space_above_capital
+        }
+
+        fullFontHeight = height_based_on_font_metrics + centerOnCapsPadding;
+        fontDrawPositionBasedOnFullHeight = alphabetic_pos_from_top + centerOnCapsPadding;
+        renderInfo.fullFontHeight = fullFontHeight;
+        renderInfo.fontDrawPositionBasedOnFullHeight = fontDrawPositionBasedOnFullHeight;
     }
 
-    // calculate vertical draw offset
-    if (offsetY === null) {
-      if (textBaseline === "top") offsetY = 0;
-      else if (textBaseline === "alphabetic") offsetY = fontSize;
-      else offsetY = fontSize;
+    // calculate text height
+    lineHeight = lineHeight || fullFontHeight;
+
+    let height;
+    if (h) {
+        height = h;
+    } else {
+        height = lineHeight * (lines.length - 1) + Math.max(lineHeight, fullFontHeight);
     }
-    if (verticalAlign === "middle") {
-      offsetY += (lineHeight - fontSize) / 2;
+
+    // calculate canvas height
+    const verticalAlign = this._settings.verticalAlign;
+
+    // calculate vertical draw offset
+    let verticalAlignOffset = (lineHeight - fullFontHeight) / 2; // default middle
+    if (verticalAlign === "top") {
+      verticalAlignOffset = 0;
     } else if (verticalAlign === "bottom") {
-      offsetY += lineHeight - fontSize;
+      verticalAlignOffset = lineHeight - fullFontHeight;
     }
 
     const rtl = this._settings.rtl;
@@ -245,7 +221,8 @@ export default class TextTextureRenderer {
         linePositionX += (innerWidth - lineWidth) / 2;
       }
 
-      linePositionY = i * lineHeight + offsetY;
+      linePositionY = (i * lineHeight) + fontDrawPositionBasedOnFullHeight;
+      linePositionY += verticalAlignOffset;
 
       drawLines.push({
         info: lines[i]!,
@@ -288,7 +265,7 @@ export default class TextTextureRenderer {
     renderInfo.cutEy = cutEy;
     renderInfo.lineHeight = lineHeight;
     renderInfo.lineWidths = lineWidths;
-    renderInfo.offsetY = offsetY;
+    // renderInfo.offsetY = verticalAlignOffset;
     renderInfo.paddingLeft = paddingLeft;
     renderInfo.paddingRight = paddingRight;
     renderInfo.letterSpacing = letterSpacing;
@@ -407,7 +384,7 @@ export default class TextTextureRenderer {
     let color = this._settings.highlightColor || 0x00000000;
 
     let hlHeight =
-      this._settings.highlightHeight * precision || renderInfo.fontSize * 1.5;
+      this._settings.highlightHeight * precision || renderInfo.fullFontHeight;
     const offset = this._settings.highlightOffset * precision;
     const hlPaddingLeft =
       this._settings.highlightPaddingLeft !== null
@@ -423,7 +400,7 @@ export default class TextTextureRenderer {
       const drawLine = renderInfo.lines[i]!;
       this._context.fillRect(
         drawLine.x - hlPaddingLeft,
-        drawLine.y - renderInfo.offsetY + offset,
+        drawLine.y - renderInfo.fontDrawPositionBasedOnFullHeight + offset,
         drawLine.w + hlPaddingRight + hlPaddingLeft,
         hlHeight
       );
@@ -493,5 +470,28 @@ export default class TextTextureRenderer {
       l: renderLines,
       r: [],
     };
+  }
+
+  _getFontMetrics(): Stage.FontMetrics | undefined {
+    const fontFace = this._settings.fontFace;
+    let fontMetrics: Stage.FontMetrics | undefined;
+      if (fontFace) {
+        if (typeof fontFace === 'string') {
+          fontMetrics = this._stage.fontMetrics[fontFace];
+        } else if (Array.isArray(fontFace)) {
+          const firstFont = fontFace.shift();
+          fontMetrics = firstFont ? this._stage.fontMetrics[firstFont] : undefined;
+        }
+      } else {
+        fontMetrics = this._stage.fontMetrics[this._stage.getOption('defaultFontFace')];
+      }
+
+
+      if (!fontMetrics) {
+          console.warn(`[Lightning] No font metrics found for font '${this._settings.fontFace}'!`);
+          return undefined;
+      }
+
+      return fontMetrics
   }
 }

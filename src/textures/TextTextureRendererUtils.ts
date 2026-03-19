@@ -111,6 +111,10 @@ export function wrapText(
 
       // commit line
       if (j > 0 && result.length > 0) {
+        if (result.endsWith(" ")) {
+          result = result.slice(0,-1)
+          totalWidth -= spaceWidth;
+        }
         resultLines.push({
           text: result,
           width: totalWidth,
