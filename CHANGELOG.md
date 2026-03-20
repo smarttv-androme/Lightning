@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.20.3
+*20 March 2026*
+
+- Allows TextRendererAdvanced to have a font style
+
 ## v2.20.2
 *20 March 2026*
 
