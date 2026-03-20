@@ -160,18 +160,24 @@ export function wrapText(
       ? measureText(context, suffix, letterSpacing)
       : 0;
 
-    while (totalWidth + suffixWidth > wrapWidth) {
-      result = result.substring(0, result.length - 1);
-      totalWidth = measureText(context, result, letterSpacing);
-    }
-
-    if (suffix) {
-      while (result.endsWith(" ")) {
+    if (suffixWidth > wrapWidth) {
+      /* If wrapWidth is too short to even contain suffix alone, return empty string */
+      result = '';
+      totalWidth = 0;
+    } else {
+      while (suffixWidth < wrapWidth && totalWidth + suffixWidth > wrapWidth) {
         result = result.substring(0, result.length - 1);
-        totalWidth -= spaceWidth;
+        totalWidth = measureText(context, result, letterSpacing);
       }
-      result += suffix;
-      totalWidth += suffixWidth;
+
+      if (suffix) {
+        while (result.endsWith(" ")) {
+          result = result.substring(0, result.length - 1);
+          totalWidth -= spaceWidth;
+        }
+        result += suffix;
+        totalWidth += suffixWidth;
+      }
     }
   }
 
