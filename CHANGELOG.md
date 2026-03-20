@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.20.2
+*20 March 2026*
+
+- Add support for font metrics, to center text vertically
+- Remove font check, we don't seem to need it
+- Reduce allocations on default shader and RoundedRect shader
+- Fix es5 builds
+
+## v2.20.1
+*5 Februari 2026*
+
+- See GitHub for changelist https://github.com/rdkcentral/Lightning/compare/v2.17.0...v2.20.1
 
 ## v2.17.0
 *22 December 2025*
