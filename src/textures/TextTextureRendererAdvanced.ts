@@ -41,10 +41,9 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
   override wrapText(text: string, wordWrapWidth: number): ILinesInfo {
     const styled = this._settings.advancedRenderer;
 
-    // styled renderer' base font should not include styling
     const baseFont = getFontSetting(
       this._settings.fontFace,
-      styled ? "" : this._settings.fontStyle,
+      this._settings.fontStyle,
       this._settings.fontSize,
       this._stage.getRenderPrecision(),
       this._stage.getOption("defaultFontFace")
