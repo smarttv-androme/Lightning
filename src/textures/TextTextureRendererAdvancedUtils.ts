@@ -87,7 +87,8 @@ function measureLine(line: LineLayout): void {
 export function createLineStyle(
   tags: string[],
   baseFont: string,
-  color: number
+  color: number,
+  baseFontWithoutStyle: string
 ) {
   const isStyled = tags.length > 0;
   let bold = 0;
@@ -119,7 +120,7 @@ export function createLineStyle(
   };
 
   const getStyle = (): ILineWordStyle => ({
-    font: (bold ? "bold " : "") + (italic ? "italic " : "") + baseFont,
+    font: bold ? "bold " + (italic ? "italic " : "") + baseFontWithoutStyle : (italic ? "italic " : "") + baseFont,
     color: colors[colors.length - 1]!,
   });
 

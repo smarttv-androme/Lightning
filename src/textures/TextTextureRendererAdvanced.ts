@@ -49,6 +49,14 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
       this._stage.getOption("defaultFontFace")
     );
 
+    const baseFontWithoutStyle = getFontSetting(
+      this._settings.fontFace,
+      '',
+      this._settings.fontSize,
+      this._stage.getRenderPrecision(),
+      this._stage.getOption("defaultFontFace")
+    );
+
     const { suffix, nowrap } = getSuffix(
       this._settings.maxLinesSuffix,
       this._settings.textOverflow,
@@ -67,7 +75,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
       tags = [];
     }
 
-    const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
+    const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor, baseFontWithoutStyle);
     const tokenize = TextTokenizer.getTokenizer();
 
     const sourceLines = text.split(/[\r\n]/g);

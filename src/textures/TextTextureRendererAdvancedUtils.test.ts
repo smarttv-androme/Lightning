@@ -51,14 +51,15 @@ describe("createLineStyle", () => {
         "<color=0x800066cc>",
       ],
       "Arial",
-      0xffff0000
+      0xffff0000,
+      "Arial"
     );
   });
 
   it('should report if styling is enabled', () => {
     expect(lineStyle.isStyled).toBe(true);
 
-    const unstyled = createLineStyle([], "Arial", 0xffff0000);
+    const unstyled = createLineStyle([], "Arial", 0xffff0000, "Arial");
     expect(unstyled.isStyled).toBe(false);
   });
 
@@ -128,7 +129,7 @@ describe("createLineStyle", () => {
 describe("layoutSpans", () => {
   it("should layout spans into lines", () => {
     const spans = [{ tokens: ["Hello", " ", "World"] }];
-    const lineStyle = createLineStyle([], "Arial", 0xffff0000);
+    const lineStyle = createLineStyle([], "Arial", 0xffff0000, "Arial");
     const lines = layoutSpans(
       mockCtx as unknown as CanvasRenderingContext2D,
       spans,
@@ -152,7 +153,7 @@ describe("layoutSpans", () => {
 
   it("should layout spans into lines with styling", () => {
     const spans = [{ tokens: ["\u2460", "Hello", "\u2461", " ", "World"] }];
-    const lineStyle = createLineStyle(["<i>", "</i>"], "Arial", 0xffff0000);
+    const lineStyle = createLineStyle(["<i>", "</i>"], "Arial", 0xffff0000, "Arial");
     const lines = layoutSpans(
       mockCtx as unknown as CanvasRenderingContext2D,
       spans,
@@ -271,7 +272,7 @@ describe("renderLines", () => {
         words: [{ text: "Hello", width: 50, style: undefined, rtl: false }],
       },
     ];
-    const lineStyle = createLineStyle([], "Arial", 0xff0000);
+    const lineStyle = createLineStyle([], "Arial", 0xff0000, "Arial");
     renderLines(
       mockCtx as unknown as CanvasRenderingContext2D,
       lines,
