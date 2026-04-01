@@ -34,6 +34,7 @@ export default class Application extends Component {
 
         this.__updateFocusCounter = 0;
         this.__keypressTimers = new Map();
+        this.__longpressTriggeredMap = new Map();
         this.__hoveredChild = null;
 
         // Default to LTR direction
@@ -406,7 +407,11 @@ export default class Application extends Component {
         if (keys) {
             for (let i = 0, n = keys.length; i < n; i++) {
                 const key = keys[i];
-                if (!this.focusTopDownEvent([`_capture${key}Release`, "_captureKeyRelease"], obj)) {
+                const longpressTriggered = this.__longpressTriggeredMap.get(key) ?? false;
+                if (longpressTriggered) {
+                    this.__longpressTriggeredMap.set(key, false);
+                }
+                if (!longpressTriggered && !this.focusTopDownEvent([`_capture${key}Release`, "_captureKeyRelease"], obj)) {
                     this.focusBottomUpEvent([`_handle${key}Release`, "_handleKeyRelease"], obj);
                 }
             }
@@ -463,6 +468,7 @@ export default class Application extends Component {
             } else {
                 this.__keypressTimers.set(key, setTimeout(() => {
                     if (!this.focusTopDownEvent([`_capture${key}Long`, "_captureKey"], {})) {
+                        this.__longpressTriggeredMap.set(key, true);
                         this.focusBottomUpEvent([`_handle${key}Long`, "_handleKey"], {});
                     }
 
