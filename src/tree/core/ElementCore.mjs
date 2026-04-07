@@ -1543,7 +1543,7 @@ export default class ElementCore {
 
             if (recalc & 6 || !this._scissor /* initial */) {
                 // Determine whether we must 'clip'.
-                if (this._clipping > 0 && r.isSquare()) {
+                if (this.clipping && r.isSquare()) {
                     // If the parent renders to a texture, it's scissor should be ignored;
                     const area = this._parent._useRenderToTexture ? this._parent._viewport : this._parent._scissor;
                     if (area) {
@@ -1629,7 +1629,7 @@ export default class ElementCore {
                             }
 
                             if (this._outOfBounds) {
-                                if (this._clipping > 0 || this._useRenderToTexture || (this._clipbox && (bboxW && bboxH))) {
+                                if (this.clipping || this._useRenderToTexture || (this._clipbox && (bboxW && bboxH))) {
                                     this._outOfBounds = 2;
                                 }
                             }
