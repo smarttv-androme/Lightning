@@ -1640,6 +1640,21 @@ export default class Element {
         this.__core.clipping = v;
     }
 
+    get clippingX() {return this.__core.clippingX}
+    set clippingX(v) {
+        this.__core.clippingX = v;
+    }
+
+    get clippingY() {return this.__core.clippingY}
+    set clippingY(v) {
+        this.__core.clippingY = v;
+    }
+
+    get clippingRect() {return this.__core.clippingRect}
+    set clippingRect(v) {
+        this.__core.clippingRect = v;
+    }
+
     get clipbox() {return this.__core.clipbox}
     set clipbox(v) {
         this.__core.clipbox = v;

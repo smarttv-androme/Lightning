@@ -1054,9 +1054,26 @@ declare namespace Element {
      * situations, you can use the advanced `renderToTexture` property which applies clipping
      * as a side effect.
      *
+     * Granular control over clipping can be achieved using the clippingX/clippingY and clippingRect properties
+     *
      * @defaultValue false
      */
     clipping: boolean;
+
+    /**
+     * Controls whether clipping should be enabled on the horizontal axis
+     */
+    clippingX: boolean;
+
+    /**
+     * Controls whether clipping should be enabled on the vertical axis
+     */
+    clippingY: boolean;
+
+    /**
+     * An override for the rect to be used for clipping. Clips to element bounds by default
+     */
+    clippingRect: [number, number, number, number];
 
     /**
      * Clipbox
@@ -1595,6 +1612,12 @@ declare class Element<
   zIndex: number;
 
   clipping: boolean;
+
+  clippingX: boolean;
+
+  clippingY: boolean;
+
+  clippingRect: [number, number, number, number];
 
   clipbox: boolean;
 

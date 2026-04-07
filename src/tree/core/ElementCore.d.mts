@@ -61,6 +61,12 @@ declare class ElementCore {
   set clipbox(v: boolean);
   get clipping(): boolean;
   set clipping(v: boolean);
+  get clippingX(): boolean;
+  set clippingX(v: boolean);
+  get clippingY(): boolean;
+  set clippingY(v: boolean);
+  get clippingRect(): [number, number, number, number];
+  set clippingRect(v: [number, number, number, number]);
   get colorUl(): number;
   set colorUl(v: number);
   get colorUr(): number;
