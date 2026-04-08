@@ -1548,13 +1548,15 @@ export default class ElementCore {
                     const area = this._parent._useRenderToTexture ? this._parent._viewport : this._parent._scissor;
                     if (area) {
                         // Merge scissor areas.
-                        const lx = this.clippingX ? Math.max(area[0], sx) : area[0];
-                        const ly = this.clippingY ? Math.max(area[1], sy) : area[1];
+                        const scissor_sx = this.clippingX ? Math.max(area[0], sx) : area[0];
+                        const scissor_sy = this.clippingY ? Math.max(area[1], sy) : area[1];
+                        const scissor_ex = this.clippingX ?  Math.min(area[2] + area[0], ex) : area[2] + area[0];
+                        const scissor_ey = this.clippingY ? Math.min(area[3] + area[1], ey) : area[3] + area[1];
                         this._scissor = [
-                            lx,
-                            ly,
-                            Math.min(area[2] + area[0], ex) - lx,
-                            Math.min(area[3] + area[1], ey) - ly
+                            scissor_sx,
+                            scissor_sy,
+                            scissor_ex - scissor_sx,
+                            scissor_ey - scissor_sy
                         ];
                     } else {
                         this._scissor = [sx, sy, ex - sx, ey - sy];
