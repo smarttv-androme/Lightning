@@ -60,10 +60,8 @@ export default class ElementCore {
 
         this._dimsUnknown = false;
 
-        /**
-         * @type {number}
-         */
-        this._clipping = CLIP_NONE;
+        this._clippingX = false;
+        this._clippingY = false;
 
         // A user-provided clipping rect
         this._clippingRect = null;
@@ -1130,20 +1128,17 @@ export default class ElementCore {
     }
 
     get clipping() {
-        return this._clipping !== CLIP_NONE;
+        return this._clippingX || this._clippingY;
     }
 
     // Toggles clipping in both axes
     set clipping(v) {
-        const mask = typeof v === "boolean"
-            // Boolean toggles clipping on both axes
-            ? (v ? CLIP_BOTH : CLIP_NONE)
-            // Otherwise, interpret as a mask
-            : v;
+        const changed = this._clippingX !== v || this._clippingY !== v;
 
-        if (this._clipping !== mask) {
-            this._clipping = mask;
+        this._clippingX = v;
+        this._clippingY = v;
 
+        if (changed) {
             // Force update of scissor by updating translate.
             // Alpha must also be updated because the scissor area may have been empty.
             this._setRecalc(1 + 2);
@@ -1151,26 +1146,34 @@ export default class ElementCore {
     }
 
     get clippingX() {
-        return (this._clipping & CLIP_HORIZONTAL) !== 0;
+        return this._clippingX;
     }
 
     set clippingX(v) {
-        if (v) {
-            this.clipping = this._clipping | CLIP_HORIZONTAL;
-        } else {
-            this.clipping = this._clipping & ~CLIP_HORIZONTAL
+        const changed = this._clippingX !== v;
+
+        this._clippingX = v;
+
+        if (changed) {
+            // Force update of scissor by updating translate.
+            // Alpha must also be updated because the scissor area may have been empty.
+            this._setRecalc(1 + 2);
         }
     }
 
     get clippingY() {
-        return (this._clipping & CLIP_VERTICAL) !== 0;
+        return this._clippingY;
     }
 
     set clippingY(v) {
-        if (v) {
-            this.clipping = this._clipping | CLIP_VERTICAL;
-        } else {
-            this.clipping = this._clipping & ~CLIP_VERTICAL;
+        const changed = this._clippingY !== v;
+
+        this._clippingY = v;
+
+        if (changed) {
+            // Force update of scissor by updating translate.
+            // Alpha must also be updated because the scissor area may have been empty.
+            this._setRecalc(1 + 2);
         }
     }
 
@@ -1518,7 +1521,7 @@ export default class ElementCore {
                 ex = Math.max(0, bboxW * r.ta, bboxW * r.ta + bboxH * r.tb, bboxH * r.tb) + r.px;
                 sy = Math.min(0, bboxW * r.tc, bboxW * r.tc + bboxH * r.td, bboxH * r.td) + r.py;
                 ey = Math.max(0, bboxW * r.tc, bboxW * r.tc + bboxH * r.td, bboxH * r.td) + r.py;
-            } else if (this._clippingRect) {
+            } else if (this.clipping && this._clippingRect) {
                 sx = r.px + this._clippingRect[0];
                 ex = r.px + r.ta * this._clippingRect[2];
                 sy = r.py + this._clippingRect[1];
@@ -2344,11 +2347,6 @@ ElementCoreContext.IDENTITY = new ElementCoreContext();
 ElementCore.sortZIndexedChildren = function (a, b) {
     return (a._zIndex === b._zIndex ? a._updateTreeOrder - b._updateTreeOrder : a._zIndex - b._zIndex);
 };
-
-const CLIP_NONE = 0;
-const CLIP_HORIZONTAL = 1 << 0;
-const CLIP_VERTICAL = 1 << 1;
-const CLIP_BOTH = CLIP_HORIZONTAL | CLIP_VERTICAL;
 
 import ElementTexturizer from "./ElementTexturizer.mjs";
 import Utils from "../Utils.mjs";
