@@ -60,7 +60,11 @@ export default class ElementCore {
 
         this._dimsUnknown = false;
 
-        this._clipping = false;
+        this._clippingX = false;
+        this._clippingY = false;
+
+        // A user-provided clipping rect
+        this._clippingRect = null;
 
         // Used by both update and render.
         this._zSort = false;
@@ -1124,17 +1128,80 @@ export default class ElementCore {
     }
 
     get clipping() {
-        return this._clipping;
+        return this._clippingX || this._clippingY;
     }
 
+    // Toggles clipping in both axes
     set clipping(v) {
-        if (this._clipping !== v) {
-            this._clipping = v;
+        const changed = this._clippingX !== v || this._clippingY !== v;
 
+        this._clippingX = v;
+        this._clippingY = v;
+
+        if (changed) {
             // Force update of scissor by updating translate.
             // Alpha must also be updated because the scissor area may have been empty.
             this._setRecalc(1 + 2);
         }
+    }
+
+    get clippingX() {
+        return this._clippingX;
+    }
+
+    set clippingX(v) {
+        const changed = this._clippingX !== v;
+
+        this._clippingX = v;
+
+        if (changed) {
+            // Force update of scissor by updating translate.
+            // Alpha must also be updated because the scissor area may have been empty.
+            this._setRecalc(1 + 2);
+        }
+    }
+
+    get clippingY() {
+        return this._clippingY;
+    }
+
+    set clippingY(v) {
+        const changed = this._clippingY !== v;
+
+        this._clippingY = v;
+
+        if (changed) {
+            // Force update of scissor by updating translate.
+            // Alpha must also be updated because the scissor area may have been empty.
+            this._setRecalc(1 + 2);
+        }
+    }
+
+    /**
+     * @return {[number, number, number, number]} v
+     */
+    get clippingRect() {
+        return this._clippingRect;
+    }
+
+    /**
+     * @param {[number, number, number, number]} v
+     */
+    set clippingRect(v) {
+        if (this._clippingRect === v) return;
+
+        if (this._clippingRect
+            && this._clippingRect[0] === v[0]
+            && this._clippingRect[1] === v[1]
+            && this._clippingRect[2] === v[2]
+            && this._clippingRect[3] === v[3]) {
+            return;
+        }
+
+        this._clippingRect = v;
+
+        // Set the same recalc status as we do for toggling clipping
+        this._setRecalc(1 + 2);
     }
 
     get clipbox() {
@@ -1454,6 +1521,11 @@ export default class ElementCore {
                 ex = Math.max(0, bboxW * r.ta, bboxW * r.ta + bboxH * r.tb, bboxH * r.tb) + r.px;
                 sy = Math.min(0, bboxW * r.tc, bboxW * r.tc + bboxH * r.td, bboxH * r.td) + r.py;
                 ey = Math.max(0, bboxW * r.tc, bboxW * r.tc + bboxH * r.td, bboxH * r.td) + r.py;
+            } else if (this.clipping && this._clippingRect) {
+                sx = r.px + this._clippingRect[0];
+                ex = r.px + r.ta * this._clippingRect[2];
+                sy = r.py + this._clippingRect[1];
+                ey = r.py + r.td * this._clippingRect[3];
             } else {
                 sx = r.px;
                 ex = r.px + r.ta * bboxW;
@@ -1474,18 +1546,20 @@ export default class ElementCore {
 
             if (recalc & 6 || !this._scissor /* initial */) {
                 // Determine whether we must 'clip'.
-                if (this._clipping && r.isSquare()) {
+                if (this.clipping && r.isSquare()) {
                     // If the parent renders to a texture, it's scissor should be ignored;
                     const area = this._parent._useRenderToTexture ? this._parent._viewport : this._parent._scissor;
                     if (area) {
                         // Merge scissor areas.
-                        const lx = Math.max(area[0], sx);
-                        const ly = Math.max(area[1], sy);
+                        const scissor_sx = this.clippingX ? Math.max(area[0], sx) : area[0];
+                        const scissor_sy = this.clippingY ? Math.max(area[1], sy) : area[1];
+                        const scissor_ex = this.clippingX ?  Math.min(area[2] + area[0], ex) : area[2] + area[0];
+                        const scissor_ey = this.clippingY ? Math.min(area[3] + area[1], ey) : area[3] + area[1];
                         this._scissor = [
-                            lx,
-                            ly,
-                            Math.min(area[2] + area[0], ex) - lx,
-                            Math.min(area[3] + area[1], ey) - ly
+                            scissor_sx,
+                            scissor_sy,
+                            scissor_ex - scissor_sx,
+                            scissor_ey - scissor_sy
                         ];
                     } else {
                         this._scissor = [sx, sy, ex - sx, ey - sy];
@@ -1560,7 +1634,7 @@ export default class ElementCore {
                             }
 
                             if (this._outOfBounds) {
-                                if (this._clipping || this._useRenderToTexture || (this._clipbox && (bboxW && bboxH))) {
+                                if (this.clipping || this._useRenderToTexture || (this._clipbox && (bboxW && bboxH))) {
                                     this._outOfBounds = 2;
                                 }
                             }
