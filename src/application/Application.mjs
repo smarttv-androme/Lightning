@@ -34,6 +34,7 @@ export default class Application extends Component {
 
         this.__updateFocusCounter = 0;
         this.__keypressTimers = new Map();
+        this.__longpressTriggeredMap = new Map();
         this.__hoveredChild = null;
 
         // We must construct while the application is not yet attached.
@@ -361,8 +362,14 @@ export default class Application extends Component {
 
         if (keys) {
             for (let i = 0, n = keys.length; i < n; i++) {
-                if (!this.stage.application.focusTopDownEvent([`_capture${keys[i]}Release`, "_captureKeyRelease"], obj)) {
-                    this.stage.application.focusBottomUpEvent([`_handle${keys[i]}Release`, "_handleKeyRelease"], obj);
+                const key = keys[i];
+
+                const longpressTriggered = this.__longpressTriggeredMap.get(key) ?? false;
+                if (longpressTriggered) {
+                    this.__longpressTriggeredMap.set(key, false);
+                }
+                if (!longpressTriggered && !this.stage.application.focusTopDownEvent([`_capture${key}Release`, "_captureKeyRelease"], obj)) {
+                    this.stage.application.focusBottomUpEvent([`_handle${key}Release`, "_handleKeyRelease"], obj);
                 }
             }
         } else {
@@ -418,6 +425,7 @@ export default class Application extends Component {
             } else {
                 this.__keypressTimers.set(key, setTimeout(() => {
                     if (!this.stage.application.focusTopDownEvent([`_capture${key}Long`, "_captureKey"], {})) {
+                        this.__longpressTriggeredMap.set(key, true);
                         this.stage.application.focusBottomUpEvent([`_handle${key}Long`, "_handleKey"], {});
                     }
 
