@@ -270,6 +270,28 @@ declare namespace Stage {
      */
     pauseRafLoopOnIdle: boolean;
     /**
+     * Number of consecutive frames without render updates before tasks queued via
+     * {@link Stage.requestIdle} are allowed to run.
+     *
+     * @defaultValue `8`
+     */
+    idleTaskThreshold: number;
+    /**
+     * Upper bound, in milliseconds, on the time spent running idle tasks in a single
+     * frame. Tasks will not be scheduled once this budget is exhausted, but a running
+     * task can not be cancelled and could overrun this threshold.
+     *
+     * @defaultValue `4`
+     */
+    idleTaskBudgetMs: number;
+    /**
+     * Total amount of budget per frame in milliseconds. After texture uploads, layout and
+     * rendering have finished, the remaining budget can be used for e.g. scheduling idle tasks.
+     *
+     * @defaultValue `16`
+     */
+    frameBudgetMs: number;
+    /**
      * The Device Pixel Ratio (DPR) affects how touch events are registered and handled on a device,
      * including the conversion of physical pixel coordinates to logical pixel coordinates and the adjustment
      * of element size and layout based on the device's pixel density.
@@ -294,6 +316,11 @@ declare namespace Stage {
   }
 
   export type FontMetricsMap = { [font: string]: FontMetrics };
+
+  /**
+   * A task queued with {@link Stage.requestIdle}, run while the stage is idle.
+   */
+  export type IdleTask = () => void;
 }
 
 /**
@@ -433,6 +460,22 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
    * Updates and renders a new frame
    */
   drawFrame(): void;
+
+  /**
+   * Queues a task to run when the stage is idle. This either means that
+   * no render updates were produced for {idleTaskThreshold} frames, or
+   * that the RAF loop is paused
+   *
+   * @param task Work to run while idle. See {@link Stage.IdleTask}.
+   */
+  requestIdle(task: Stage.IdleTask): void;
+
+  /**
+   * Removes a task previously queued with {@link Stage.requestIdle}.
+   *
+   * @param task The task reference
+   */
+  cancelIdle(task: Stage.IdleTask): void;
 
   /**
    * Returns `true` if the frame is currently updating
