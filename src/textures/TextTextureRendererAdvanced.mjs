@@ -208,12 +208,14 @@ export default class TextTextureRendererAdvanced {
         renderInfo.lines = []
         for (let i = 0; i < renderInfo.lineNum; i++) {
             let linePositionY = (i * renderInfo.lineHeight) + renderInfo.fontDrawPositionBasedOnFullHeight;
-             if (this._settings.verticalAlign === 'top') {
+            // Same clamp as the canvas height, so a small lineHeight cannot offset the text incorrectly
+            const boxHeight = Math.max(renderInfo.lineHeight, renderInfo.fullFontHeight);
+            if (this._settings.verticalAlign === 'top') {
                 // already ok
             } else if (this._settings.verticalAlign === 'bottom') {
-                linePositionY += renderInfo.lineHeight - renderInfo.fullFontHeight;
+                linePositionY += boxHeight - renderInfo.fullFontHeight;
             } else {
-                linePositionY += (renderInfo.lineHeight - renderInfo.fullFontHeight) / 2;
+                linePositionY += (boxHeight - renderInfo.fullFontHeight) / 2;
             }
             renderInfo.lines[i] = {
                 width: 0,
