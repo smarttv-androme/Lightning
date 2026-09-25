@@ -113,6 +113,7 @@ export default class Stage extends EventEmitter {
 
         this.textureManager = new TextureManager(this);
         this.textureThrottler = new TextureThrottler(this);
+        this.idleTaskScheduler = new IdleTaskScheduler(this);
 
         this.startTime = 0;
         this.currentTime = 0;
@@ -205,6 +206,11 @@ export default class Stage extends EventEmitter {
         opt('debugFrame', false);
         opt('forceTxCanvasSource', false);
         opt('pauseRafLoopOnIdle', false);
+        opt('idleSchedulerMinimumBudgetMs', 2);
+        opt('idleSchedulerBusyFrameMaxBudgetMs', 16);
+        opt('idleSchedulerIdleFrameMaxBudgetMs', 33);
+        opt('idleSchedulerMaxWaitMs', 5_000);
+        opt('idleSchedulerMaxQueued', 30);
 
         if (o['devicePixelRatio'] != null && o['devicePixelRatio'] !== 1) {
             this._options['precision'] *= o['devicePixelRatio']
@@ -238,6 +244,7 @@ export default class Stage extends EventEmitter {
         this.platform.destroy();
         this.ctx.destroy();
         this.textureManager.destroy();
+        this.idleTaskScheduler.destroy();
         this._renderer.destroy();
 
         // clear last rendered frame
@@ -256,6 +263,7 @@ export default class Stage extends EventEmitter {
         this._options = null;
         this.platform = null;
         this.textureManager = null;
+        this.idleTaskScheduler = null;
         this._renderer = null;
 
         delete this.gl;
@@ -264,6 +272,7 @@ export default class Stage extends EventEmitter {
         delete this._options;
         delete this.platform;
         delete this.textureManager;
+        delete this.idleTaskScheduler;
         delete this._renderer;
     }
 
@@ -340,8 +349,25 @@ export default class Stage extends EventEmitter {
 
     idleFrame() {
         this.textureThrottler.processSome();
+        this.idleTaskScheduler.processSome(false);
         this.emit('frameEnd');
         this.frameCounter++;
+    }
+
+    /**
+     * Schedule a task to run when the stage is idle
+     * @param {() => void} task
+     */
+    requestIdle(task) {
+        this.idleTaskScheduler.add(task);
+    }
+
+    /**
+     * Removes a task previously queued with requestIdle.
+     * @param {() => void} task
+     */
+    cancelIdle(task) {
+        this.idleTaskScheduler.remove(task);
     }
 
     renderFrame() {
@@ -357,6 +383,8 @@ export default class Stage extends EventEmitter {
             this.ctx.render();
             this._updatingFrame = false;
         }
+
+        this.idleTaskScheduler.processSome(changes);
 
         this.platform.nextFrame(changes);
 
@@ -551,6 +579,7 @@ import Element from "./Element.mjs";
 import StageUtils from "./StageUtils.mjs";
 import TextureManager from "./TextureManager.mjs";
 import TextureThrottler from "./TextureThrottler.mjs";
+import IdleTaskScheduler from "./IdleTaskScheduler.mjs";
 import CoreContext from "./core/CoreContext.mjs";
 import TransitionManager from "../animation/TransitionManager.mjs";
 import AnimationManager from "../animation/AnimationManager.mjs";
