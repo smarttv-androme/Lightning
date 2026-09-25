@@ -206,9 +206,11 @@ export default class Stage extends EventEmitter {
         opt('debugFrame', false);
         opt('forceTxCanvasSource', false);
         opt('pauseRafLoopOnIdle', false);
-        opt('idleTaskThreshold', 8);
-        opt('idleTaskBudgetMs', 4);
-        opt('frameBudgetMs', 16);
+        opt('idleSchedulerMinimumBudgetMs', 2);
+        opt('idleSchedulerBusyFrameMaxBudgetMs', 16);
+        opt('idleSchedulerIdleFrameMaxBudgetMs', 33);
+        opt('idleSchedulerMaxWaitMs', 5_000);
+        opt('idleSchedulerMaxQueued', 30);
 
         if (o['devicePixelRatio'] != null && o['devicePixelRatio'] !== 1) {
             this._options['precision'] *= o['devicePixelRatio']
@@ -347,7 +349,7 @@ export default class Stage extends EventEmitter {
 
     idleFrame() {
         this.textureThrottler.processSome();
-        this.idleTaskScheduler.processSome();
+        this.idleTaskScheduler.processSome(false);
         this.emit('frameEnd');
         this.frameCounter++;
     }
@@ -382,7 +384,7 @@ export default class Stage extends EventEmitter {
             this._updatingFrame = false;
         }
 
-        this.idleTaskScheduler.onFrame(changes);
+        this.idleTaskScheduler.processSome(changes);
 
         this.platform.nextFrame(changes);
 

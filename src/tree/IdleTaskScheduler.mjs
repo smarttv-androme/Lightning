@@ -2,78 +2,57 @@
  * Runs low-priority tasks while the stage is idle, keeping them off the frames
  * that render active animation or scrolling.
  *
- * Tasks are only run after `idleTaskThreshold` frames with no render updates,
- * or when the RAF loop is paused. Idle tasks are allowed to be started as long
- * as they fall within the budget of at most `idleTaskBudgetMs`, but this ca
- * be less depending on the remaining `frameBudgetMs`.
- *
- * Note that tasks can not be cancelled, and can thus go over budget. A task is
- * started as long as there is budget left, but is not guaranteed to stay within
- * the allocated budget.
+ * Tasks are ideally run when there budget left within the frame, but they can
+ * also be executed when they either:
+ * - have been withheld for too long
+ * - the task queue has exceeded its configured limit
  */
 
+/** @import {default as Stage} from "./Stage.mjs" */
+
 /**
- * A queued idle task. Mirrors the public {@link Stage.IdleTask} type.
- *
- * @callback IdleTask
+ * @typedef {Object} QueuedTask
+ * @property {Stage.IdleTask} task The task itself
+ * @property {number} timestamp When the task was queued
  */
 
 export default class IdleTaskScheduler {
 
     /**
-     * @param {import('./Stage.mjs').default} stage
+     * @param {Stage} stage
      */
     constructor(stage) {
+        /** @type {Stage} */
         this.stage = stage;
-        this._tasks = [];
-        this._idleFrames = 0;
+        /** @type {QueuedTask[]} */
+        this._queue = [];
+        /** @type {number} */
+        this.idleSchedulerMinimumBudgetMs = stage.getOption('idleSchedulerMinimumBudgetMs');
+        /** @type {number} */
+        this.idleSchedulerBusyFrameMaxBudgetMs = stage.getOption('idleSchedulerBusyFrameMaxBudgetMs');
+        /** @type {number} */
+        this.idleSchedulerIdleFrameMaxBudgetMs = stage.getOption('idleSchedulerIdleFrameMaxBudgetMs');
+        /** @type {number} */
+        this.idleSchedulerMaxWaitMs = stage.getOption('idleSchedulerMaxWaitMs');
+        /** @type {number} */
+        this.idleSchedulerMaxQueued = stage.getOption('idleSchedulerMaxQueued');
     }
 
     destroy() {
-        this._tasks = [];
+        this._queue = [];
         this.stage = null;
 
-        delete this._tasks;
+        delete this._queue;
         delete this.stage;
     }
 
     /**
-     * @param {boolean} hasRenderUpdates Whether this frame produced render updates.
+     * @param {boolean} hasRenderUpdates Whether render updates were produced this frame
      */
-    onFrame(hasRenderUpdates) {
-        if (hasRenderUpdates) {
-            this._idleFrames = 0;
-            return;
-        }
-        if (++this._idleFrames >= this.stage.getOption('idleTaskThreshold')) {
-            this.processSome();
-        }
-    }
-
-    /**
-     * Runs queued tasks within this frame's remaining time budget. Also called
-     * directly from the stage's idle-loop frame when the RAF loop is paused.
-     */
-    processSome() {
-        if (this._tasks.length === 0) {
-            return;
-        }
-
-        const platform = this.stage.platform;
-        const frameStart = this.stage.currentTime;
-        const idleProcessingStart = platform.getHrTime();
-        const elapsed = idleProcessingStart - frameStart;
-        const frameBudgetMs = this.stage.getOption('frameBudgetMs');
-        const idleTaskBudgetMs = this.stage.getOption('idleTaskBudgetMs');
-        const budgetMs = Math.min(frameBudgetMs - elapsed, idleTaskBudgetMs);
-
-        if (budgetMs <= 0) {
-            return;
-        }
-
-        while (this._tasks.length > 0 && platform.getHrTime() - idleProcessingStart < budgetMs) {
-            const task = this._tasks.shift();
-            task();
+    processSome(hasRenderUpdates) {
+        while (this._shouldProcessTask(hasRenderUpdates)) {
+            const entry = this._queue.shift();
+            entry.task();
         }
     }
 
@@ -81,17 +60,76 @@ export default class IdleTaskScheduler {
      * @param {IdleTask} task
      */
     add(task) {
-        this._tasks.push(task);
+        this._queue.push({
+            task: task,
+            timestamp: Date.now(),
+        });
     }
 
     /**
      * @param {IdleTask} task
      */
     remove(task) {
-        const index = this._tasks.indexOf(task);
+        const index = this._queue.findIndex((entry) => entry.task === task);
         if (index >= 0) {
-            this._tasks.splice(index, 1);
+            this._queue.splice(index, 1);
         }
     }
 
+    /**
+     * @param {boolean} hasRenderUpdates Whether render updates were produced this frame
+     * @return boolean
+     * @private
+     */
+    _shouldProcessTask(hasRenderUpdates) {
+        if (this._queue.length === 0) return false;
+
+        // Queue is full, process until we reach the maximum capacity
+        if (this._queue.length > this.idleSchedulerMaxQueued) {
+            return true;
+        }
+        // If the oldest task has hit the max wait time, process it
+        if (this._isOldestTaskOverdue()) {
+            return true;
+        }
+
+        // Otherwise, we need to check whether we still have budget left this frame
+        const platform = this.stage.platform;
+        const frameStart = this.stage.currentTime;
+        const now = platform.getHrTime()
+        const elapsedMsSinceFrameStart = now - frameStart;
+
+        // If we did not produce render updates this frame, check the idle frame budget
+        const idleBudgetMs = this.idleSchedulerIdleFrameMaxBudgetMs - elapsedMsSinceFrameStart;
+        const hasIdleFrameBudget = idleBudgetMs > this.idleSchedulerMinimumBudgetMs;
+        if (!hasRenderUpdates && hasIdleFrameBudget) {
+            return true;
+        }
+
+        // Otherwise, check the busy frame budget
+        const busyBudgetMs = this.idleSchedulerBusyFrameMaxBudgetMs - elapsedMsSinceFrameStart;
+        return busyBudgetMs > this.idleSchedulerMinimumBudgetMs;
+    }
+
+    /**
+     * @return boolean
+     * @private
+     */
+    _isOldestTaskOverdue() {
+        if (this._queue.length === 0) return false;
+        return this._isTaskOverdue(this._queue[0]);
+    }
+
+    /**
+     * @param {QueuedTask | undefined} task
+     * @returns boolean
+     * @private
+     */
+    _isTaskOverdue(task) {
+        if (!task) return false;
+
+        const now = Date.now();
+        const expiration = task.timestamp + this.idleSchedulerMaxWaitMs;
+        return now > expiration;
+    }
 }

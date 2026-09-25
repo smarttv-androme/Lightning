@@ -259,6 +259,7 @@ declare namespace Stage {
      * @defaultValue `false`
      */
     forceTxCanvasSource: boolean;
+
     /**
      * If set to `true`, will stop the Render Engine from calling `RequestAnimationFrame` when there are no
      * stage updates.
@@ -269,28 +270,46 @@ declare namespace Stage {
      * @defaultValue `false`
      */
     pauseRafLoopOnIdle: boolean;
+
     /**
-     * Number of consecutive frames without render updates before tasks queued via
-     * {@link Stage.requestIdle} are allowed to run.
+     * Minimum amount of budget which should be available before a task can be started, measured in milliseconds.
+     * Useful to avoid overrunning our budget if we've almost run out (i.e. not starting a task if we have only 0.1ms
+     * budget left).
      *
-     * @defaultValue `8`
+     * @defaultValue `2`
      */
-    idleTaskThreshold: number;
+    idleSchedulerMinimumBudgetMs: number;
+
     /**
-     * Upper bound, in milliseconds, on the time spent running idle tasks in a single
-     * frame. Tasks will not be scheduled once this budget is exhausted, but a running
-     * task can not be cancelled and could overrun this threshold.
-     *
-     * @defaultValue `4`
-     */
-    idleTaskBudgetMs: number;
-    /**
-     * Total amount of budget per frame in milliseconds. After texture uploads, layout and
-     * rendering have finished, the remaining budget can be used for e.g. scheduling idle tasks.
+     * The maximum frame budget for running idle tasks on a frame which produced render updates.
      *
      * @defaultValue `16`
      */
-    frameBudgetMs: number;
+    idleSchedulerBusyFrameMaxBudgetMs: number;
+
+    /**
+     * The maximum frame budget for running idle tasks on a frame which produced no render updates.
+     *
+     * @defaultValue `33`
+     */
+    idleSchedulerIdleFrameMaxBudgetMs: number;
+
+    /**
+     * Maximum amount of time a task schedule by the IdleTaskScheduler should wait before
+     * it is run regardless of idle time.
+     *
+     * @defaultValue `5_000`
+     */
+    idleSchedulerMaxWaitMs: number;
+
+    /**
+     * Maximum amount of tasks that can be queued by the IdleTaskScheduler. If more are queued,
+     * the oldest tasks are popped from the queue and scheduled to run at the end of the frame.
+     *
+     * @defaultValue `30`
+     */
+    idleSchedulerMaxQueued: number;
+
     /**
      * The Device Pixel Ratio (DPR) affects how touch events are registered and handled on a device,
      * including the conversion of physical pixel coordinates to logical pixel coordinates and the adjustment
@@ -334,6 +353,8 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
   application: Application;
   c2d?: CanvasRenderingContext2D;
   ctx: CoreContext;
+  startTime: number;
+  currentTime: number;
   dt: number;
   /**
    * Number of frames rendered since App launch
@@ -462,9 +483,8 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
   drawFrame(): void;
 
   /**
-   * Queues a task to run when the stage is idle. This either means that
-   * no render updates were produced for {idleTaskThreshold} frames, or
-   * that the RAF loop is paused
+   * Queues a task to run when the stage is idle, or a threshold has
+   * been exceeded.
    *
    * @param task Work to run while idle. See {@link Stage.IdleTask}.
    */
