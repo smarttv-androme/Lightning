@@ -259,6 +259,7 @@ declare namespace Stage {
      * @defaultValue `false`
      */
     forceTxCanvasSource: boolean;
+
     /**
      * If set to `true`, will stop the Render Engine from calling `RequestAnimationFrame` when there are no
      * stage updates.
@@ -269,6 +270,46 @@ declare namespace Stage {
      * @defaultValue `false`
      */
     pauseRafLoopOnIdle: boolean;
+
+    /**
+     * Minimum amount of budget which should be available before a task can be started, measured in milliseconds.
+     * Useful to avoid overrunning our budget if we've almost run out (i.e. not starting a task if we have only 0.1ms
+     * budget left).
+     *
+     * @defaultValue `2`
+     */
+    idleSchedulerMinimumBudgetMs: number;
+
+    /**
+     * The maximum frame budget for running idle tasks on a frame which produced render updates.
+     *
+     * @defaultValue `16`
+     */
+    idleSchedulerBusyFrameMaxBudgetMs: number;
+
+    /**
+     * The maximum frame budget for running idle tasks on a frame which produced no render updates.
+     *
+     * @defaultValue `33`
+     */
+    idleSchedulerIdleFrameMaxBudgetMs: number;
+
+    /**
+     * Maximum amount of time a task schedule by the IdleTaskScheduler should wait before
+     * it is run regardless of idle time.
+     *
+     * @defaultValue `5_000`
+     */
+    idleSchedulerMaxWaitMs: number;
+
+    /**
+     * Maximum amount of tasks that can be queued by the IdleTaskScheduler. If more are queued,
+     * the oldest tasks are popped from the queue and scheduled to run at the end of the frame.
+     *
+     * @defaultValue `30`
+     */
+    idleSchedulerMaxQueued: number;
+
     /**
      * The Device Pixel Ratio (DPR) affects how touch events are registered and handled on a device,
      * including the conversion of physical pixel coordinates to logical pixel coordinates and the adjustment
@@ -294,6 +335,11 @@ declare namespace Stage {
   }
 
   export type FontMetricsMap = { [font: string]: FontMetrics };
+
+  /**
+   * A task queued with {@link Stage.requestIdle}, run while the stage is idle.
+   */
+  export type IdleTask = () => void;
 }
 
 /**
@@ -307,6 +353,8 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
   application: Application;
   c2d?: CanvasRenderingContext2D;
   ctx: CoreContext;
+  startTime: number;
+  currentTime: number;
   dt: number;
   /**
    * Number of frames rendered since App launch
@@ -433,6 +481,21 @@ declare class Stage extends EventEmitter<Stage.EventMap> {
    * Updates and renders a new frame
    */
   drawFrame(): void;
+
+  /**
+   * Queues a task to run when the stage is idle, or a threshold has
+   * been exceeded.
+   *
+   * @param task Work to run while idle. See {@link Stage.IdleTask}.
+   */
+  requestIdle(task: Stage.IdleTask): void;
+
+  /**
+   * Removes a task previously queued with {@link Stage.requestIdle}.
+   *
+   * @param task The task reference
+   */
+  cancelIdle(task: Stage.IdleTask): void;
 
   /**
    * Returns `true` if the frame is currently updating
