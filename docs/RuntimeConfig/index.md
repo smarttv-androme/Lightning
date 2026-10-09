@@ -49,6 +49,7 @@ const App = new MyApp(options);
 | `readPixelsAfterDrawThreshold` | Number | 0 | If `readPixelsAfterDraw` is set to *true*, this is the number of render-to-texture element re-renders in a frame that will trigger the synchronous Render pipeline. This can enable full performance on frames that would not normally suffer from the flickering artifacts exhibited on certain devices. |
 | `debugFrame` | Boolean | false | If set to *true*, logs debug information about each frame including how many render-to-texture elements were re-rendered. This may impact performance and should not be turned on in production. |
 | `forceTxCanvasSource` | Boolean | false | If set to *true*, forces the Render Engine to use the canvasSource over getImageData for text (this helps with text generation on certain devices). |
+| `flushTxCanvasSource` | Boolean | false | If set to *true*, uploads canvas textures (e.g. text) directly like `forceTxCanvasSource`, but first reads back a single pixel to force the canvas to finish drawing. Fixes blank or garbage text textures on devices such as Samsung Tizen 4.0, and is much faster than the default getImageData upload. Does not require `forceTxCanvasSource`. |
 | `pauseRafLoopOnIdle` | Boolean | false | If set to *true* will stop the Render Engine from calling `RequestAnimationFrame` when there are no stage updates. |
 | `devicePixelRatio` | Number | 1 | The DPR is the logical to physical pixel density for a touch enabled device and affects how we calculate collisions |
 
