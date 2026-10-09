@@ -261,6 +261,20 @@ declare namespace Stage {
     forceTxCanvasSource: boolean;
 
     /**
+     * If set to `true`, uploads canvas textures (e.g. text) directly like `forceTxCanvasSource`, but first reads back
+     * a single pixel to force the canvas to finish drawing.
+     *
+     * @remarks
+     * This still has a bit of a performance hit because it is not direct. But is also way faster than the full getImageData
+     * Fixes blank or garbage textures on devices that upload GPU-backed canvases before drawing has finished
+     * (e.g. Samsung Tizen 4.0), while being much faster than the default full getImageData upload.
+     * Can be used on its own; `forceTxCanvasSource` does not need to be set as well.
+     *
+     * @defaultValue `false`
+     */
+    flushTxCanvasSource: boolean;
+
+    /**
      * If set to `true`, will stop the Render Engine from calling `RequestAnimationFrame` when there are no
      * stage updates.
      *

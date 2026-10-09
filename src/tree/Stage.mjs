@@ -205,6 +205,7 @@ export default class Stage extends EventEmitter {
         opt('readPixelsAfterDrawThreshold', 0);
         opt('debugFrame', false);
         opt('forceTxCanvasSource', false);
+        opt('flushTxCanvasSource', false);
         opt('pauseRafLoopOnIdle', false);
         opt('idleSchedulerMinimumBudgetMs', 2);
         opt('idleSchedulerBusyFrameMaxBudgetMs', 16);
