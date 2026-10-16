@@ -133,8 +133,14 @@ export default class WebPlatform {
             // Web-specific data types.
             gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
         } else if (source instanceof HTMLCanvasElement) {
-            if (Utils.isZiggo || this.stage.getOption("forceTxCanvasSource")) {
+            const flushTxCanvasSource = this.stage.getOption("flushTxCanvasSource");
+            if (Utils.isZiggo || this.stage.getOption("forceTxCanvasSource") || flushTxCanvasSource) {
                 // Ziggo EOS and Selene have issues with getImageData implementation causing artifacts.
+                if (flushTxCanvasSource && source.width > 0 && source.height > 0) {
+                    // Tizen 4.0 (Chromium 56) uploads GPU-backed canvases before drawing has finished, giving blank or garbage
+                    // textures. Reading back a single pixel forces the canvas to flush, without the cost of a full getImageData.
+                    source.getContext('2d').getImageData(0, 0, 1, 1);
+                }
                 gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
             } else if (source.width > 0 && source.height > 0) {
                 // Workaround for some browsers (e.g. Tizen) as they do not convert canvas data to texture correctly, sometimes causing artifacts.

@@ -1,0 +1,235 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Canvas upload test</title>
+<style>
+  body { margin: 0; background: #000; color: #fff; font: 16px monospace; overflow: hidden; }
+  #gl { position: absolute; left: 0; top: 0; }
+  #o { position: absolute; left: 1220px; top: 0; right: 0; margin: 0; padding: 8px; white-space: pre-wrap; }
+</style>
+<canvas id="gl" width="1200" height="1080"></canvas>
+<pre id="o">loading...</pre>
+<script>
+// Canvas -> WebGL upload test for Tizen / old Chromium (38+). ES5 only, no modules. Serve over http.
+// Each variant uploads text-like canvases spread over animation frames (like Lightning does), renders them,
+// and verifies each texture a few frames later via framebuffer readPixels. Options: ?rounds=40&perFrame=6
+(function () {
+  var q = {};
+  location.search.replace(/[?&](\w+)=(\d+)/g, function (m, k, v) { q[k] = +v; });
+  var ROUNDS = q.rounds || 40, PER_FRAME = q.perFrame || 6, VERIFY_DELAY = 3, MAX_LIVE = 48;
+
+  // Large text-like canvases, all well above the ~256x256 area GPU-canvas threshold (multi-line / full-width texts).
+  var SIZES = [[1920, 200], [1500, 400], [1000, 300], [800, 600], [1920, 100], [1200, 500]];
+  var SMALL_SIZES = [[600, 60], [400, 100], [250, 250], [500, 120], [300, 40]];
+
+  var VARIANTS = [
+    { name: 'getImageData (current)', upload: function (t, c) { tex(c.getContext('2d').getImageData(0, 0, c.width, c.height)); } },
+    { name: 'direct', upload: function (t, c) { tex(c); } },
+    { name: 'flush1px', upload: function (t, c) { c.getContext('2d').getImageData(0, 0, 1, 1); tex(c); } },
+    { name: 'keepAlive', upload: function (t, c) { tex(c); keep(c); } },
+    { name: 'glFlush', upload: function (t, c) { tex(c); gl.flush(); } },
+    { name: 'flush1px+keepAlive', upload: function (t, c) { c.getContext('2d').getImageData(0, 0, 1, 1); tex(c); keep(c); } },
+    { name: 'reupload +2 frames', reupload: true, upload: function (t, c) { tex(c); } },
+    { name: 'direct, small canvases', small: true, upload: function (t, c) { tex(c); } },
+    // Sanity check of the test itself: uploads an empty canvas, so every texture must be reported as blank.
+    { name: 'CONTROL (must fail)', upload: function (t, c) { var e = document.createElement('canvas'); e.width = c.width; e.height = c.height; tex(e); } }
+  ];
+
+  var out = document.getElementById('o');
+  var glCanvas = document.getElementById('gl');
+  var opts = { alpha: true, antialias: false, premultipliedAlpha: true, stencil: true, preserveDrawingBuffer: false };
+  var gl = glCanvas.getContext('webgl', opts) || glCanvas.getContext('experimental-webgl', opts);
+  if (!gl) { out.textContent = 'No WebGL'; return; }
+
+  function tex(src) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
+  var kept = [];
+  function keep(c) { kept.push(c); if (kept.length > 16) kept.shift(); }
+
+  // Simple textured quad renderer (premultiplied alpha, like Lightning).
+  function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; uniform vec4 r; varying vec2 uv; void main(){ uv = p; gl_Position = vec4(r.xy + p * r.zw, 0.0, 1.0); }'));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 uv; uniform sampler2D s; void main(){ gl_FragColor = texture2D(s, uv); }'));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  var aP = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(aP);
+  gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+  var uR = gl.getUniformLocation(prog, 'r');
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  var fb = gl.createFramebuffer();
+  var px = new Uint8Array(4);
+
+  var counter = 0;
+  function colorOf(id, k) {
+    return [(id * 53 + k * 97) % 200 + 30, (id * 29 + k * 61) % 200 + 30, (id * 17 + k * 131) % 200 + 30];
+  }
+
+  // Text across the canvas, then 3 opaque rects on top (sampled at their centers); top-right pixel must stay transparent.
+  function makeCanvas(w, h, id) {
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.font = Math.max(10, Math.floor(h * 0.35)) + 'px sans-serif';
+    ctx.fillText('Lightning text texture #' + id + ' ' + w + 'x' + h, 4, h - 3);
+    var samples = [];
+    for (var k = 0; k < 3; k++) {
+      var col = colorOf(id, k);
+      ctx.fillStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
+      ctx.fillRect(k * w / 4 + w / 16, h / 4, w / 8, h / 2);
+      samples.push({ x: Math.floor(k * w / 4 + w / 8), y: Math.floor(h / 2), c: [col[0], col[1], col[2], 255] });
+    }
+    samples.push({ x: w - 2, y: 1, c: [0, 0, 0, 0] });
+    return { canvas: c, samples: samples };
+  }
+
+  // Returns null if ok, otherwise 'blank' or 'wrong'.
+  function verify(rec) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rec.t, 0);
+    var res = null;
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      res = 'wrong';
+    } else {
+      var blank = true;
+      for (var i = 0; i < rec.samples.length; i++) {
+        var s = rec.samples[i];
+        gl.readPixels(s.x, s.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        if (px[3] !== 0) blank = false;
+        for (var j = 0; j < 4; j++) if (Math.abs(px[j] - s.c[j]) > 4) res = 'wrong';
+      }
+      if (res && blank) res = 'blank';
+    }
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return res;
+  }
+
+  function render(live) {
+    gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+    gl.clearColor(0.1, 0.1, 0.1, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    var W = glCanvas.width, H = glCanvas.height, tw = 594, th = 174, first = Math.max(0, live.length - 12);
+    for (var i = first; i < live.length; i++) {
+      var n = i - first, rec = live[i], sc = Math.min(tw / rec.w, th / rec.h), x = 4 + (n % 2) * (tw + 4), y = 4 + Math.floor(n / 2) * (th + 4), w = rec.w * sc, h = rec.h * sc;
+      gl.bindTexture(gl.TEXTURE_2D, live[i].t);
+      gl.uniform4f(uR, 2 * x / W - 1, 1 - 2 * y / H, 2 * w / W, -2 * h / H);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+  }
+
+  var results = [], detectLine = '';
+  function show(status) {
+    var lines = ['UA: ' + navigator.userAgent, 'rounds=' + ROUNDS + ' perFrame=' + PER_FRAME, detectLine, ''];
+    lines.push(pad('variant', 26) + pad('fail', 12) + pad('blank', 8) + pad('wrong', 8) + 'upload ms/tex');
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      lines.push(pad(r.name, 26) + pad(r.blank + r.wrong + '/' + r.total, 12) + pad('' + r.blank, 8) + pad('' + r.wrong, 8) +
+        (r.total ? (r.ms / r.total).toFixed(2) : '-') + (r.glError ? '  GL ERROR' : ''));
+    }
+    lines.push('', status);
+    out.textContent = lines.join('\n');
+  }
+  function pad(s, n) { s = '' + s; while (s.length < n) s += ' '; return s; }
+
+  function runVariant(vi) {
+    if (vi >= VARIANTS.length) {
+      show('done. A variant with fail 0 (and few ms/tex) is a candidate fix.');
+      console.log('[canvas-upload-test]\n' + out.textContent);
+      return;
+    }
+    var v = VARIANTS[vi], sizes = v.small ? SMALL_SIZES : SIZES;
+    var r = { name: v.name, total: 0, blank: 0, wrong: 0, ms: 0, glError: false };
+    results.push(r);
+    kept = [];
+    var live = [], pending = [], frame = 0, round = 0;
+
+    function tick() {
+      frame++;
+      // Re-uploads that are due (same canvas into the same texture).
+      for (var i = 0; i < pending.length; i++) {
+        var p = pending[i];
+        if (p.canvas && p.reuploadAt === frame) {
+          var t0 = performance.now();
+          gl.bindTexture(gl.TEXTURE_2D, p.t);
+          tex(p.canvas);
+          r.ms += performance.now() - t0;
+          p.canvas = null;
+        }
+      }
+      // New uploads for this frame.
+      if (round < ROUNDS) {
+        for (var n = 0; n < PER_FRAME; n++) {
+          var sz = sizes[(round * PER_FRAME + n) % sizes.length], id = ++counter;
+          var made = makeCanvas(sz[0], sz[1], id);
+          var t = gl.createTexture();
+          var t1 = performance.now();
+          gl.bindTexture(gl.TEXTURE_2D, t);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          v.upload(t, made.canvas);
+          r.ms += performance.now() - t1;
+          var rec = { t: t, w: sz[0], h: sz[1], samples: made.samples, verifyAt: frame + VERIFY_DELAY };
+          if (v.reupload) { rec.canvas = made.canvas; rec.reuploadAt = frame + 2; rec.verifyAt = frame + 2 + VERIFY_DELAY; }
+          pending.push(rec);
+          live.push(rec);
+        }
+        round++;
+      }
+      render(live);
+      // Verify due textures; drop the oldest live ones afterwards to churn GPU memory like Lightning's texture GC.
+      for (var j = pending.length - 1; j >= 0; j--) {
+        if (pending[j].verifyAt <= frame) {
+          var res = verify(pending[j]);
+          r.total++;
+          if (res) r[res]++;
+          pending.splice(j, 1);
+        }
+      }
+      while (live.length > MAX_LIVE && pending.indexOf(live[0]) === -1) gl.deleteTexture(live.shift().t);
+      if (gl.getError() !== gl.NO_ERROR) r.glError = true;
+      show('running ' + v.name + ' (' + round + '/' + ROUNDS + ')');
+
+      if (round >= ROUNDS && !pending.length) {
+        for (var k = 0; k < live.length; k++) gl.deleteTexture(live[k].t);
+        live = [];
+        render(live);
+        requestAnimationFrame(function () { runVariant(vi + 1); });
+      } else {
+        requestAnimationFrame(tick);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // Startup self-test from detect-canvas-upload.mjs (candidate for forceTxCanvasSource: 'auto').
+  var x = new XMLHttpRequest();
+  x.open('GET', 'detect-canvas-upload.mjs');
+  x.onload = function () {
+    try {
+      (0, eval)(x.responseText.replace('export function', 'function'));
+      var t0 = performance.now(), runs = [];
+      for (var i = 0; i < 5; i++) runs.push(isCanvasUploadBroken(gl, 20));
+      detectLine = 'startup self-test broken per run: ' + runs.join(',') + ' (' + Math.round(performance.now() - t0) + 'ms for 5 runs)';
+    } catch (e) {
+      detectLine = 'startup self-test error: ' + e;
+    }
+    // The self-test changes the bound program/buffer state only via textures/framebuffers; rebind ours to be safe.
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    runVariant(0);
+  };
+  x.onerror = function () { detectLine = 'startup self-test: could not load detect-canvas-upload.mjs'; runVariant(0); };
+  x.send();
+})();
+</script>
