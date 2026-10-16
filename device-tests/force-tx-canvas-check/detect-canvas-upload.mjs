@@ -5,7 +5,6 @@ export function isCanvasUploadBroken(gl, iterations) {
     var sizes = [[512, 256], [300, 300], [640, 128], [256, 512]]; // all area > 256*256 (GPU canvas threshold)
     var P = [gl.UNPACK_ALIGNMENT, gl.UNPACK_FLIP_Y_WEBGL, gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, gl.UNPACK_COLORSPACE_CONVERSION_WEBGL];
     var saved = [], prevTex, prevFb, prevUnit, fb, texs = [], broken = false, i, j;
-    var prevUnitCleanup = null;
     try {
         for (i = 0; i < P.length; i++) saved.push(gl.getParameter(P[i]));
         prevUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
