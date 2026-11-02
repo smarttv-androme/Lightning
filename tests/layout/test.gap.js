@@ -296,7 +296,9 @@ describe('layout', () => {
                             ]
                         },
                         {
-                            flex: {wrap: true, gap: 30},
+                            // Fixed width: a stretched, wrapping child in an auto-sized column is
+                            // measured before it is stretched, which mismatches HTML even without gaps.
+                            flex: {wrap: true, gap: 30}, w: 500,
                             children: [
                                 {w: 200, h: 40},
                                 {w: 200, h: 40},

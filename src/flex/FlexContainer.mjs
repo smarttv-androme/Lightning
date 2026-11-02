@@ -38,6 +38,9 @@ export default class FlexContainer {
         this._paddingTop = 0;
         this._paddingRight = 0;
         this._paddingBottom = 0;
+
+        this._rowGap = 0;
+        this._columnGap = 0;
     }
 
     get item() {
@@ -162,6 +165,55 @@ export default class FlexContainer {
 
     get paddingBottom() {
         return this._paddingBottom;
+    }
+
+    set gap(v) {
+        this.rowGap = v;
+        this.columnGap = v;
+    }
+
+    get gap() {
+        return this.rowGap;
+    }
+
+    /**
+     * Vertical space between items (column direction) or lines (row direction).
+     */
+    set rowGap(v) {
+        if (this._rowGap === v) return;
+        this._rowGap = v;
+        this._changedContents();
+    }
+
+    get rowGap() {
+        return this._rowGap;
+    }
+
+    /**
+     * Horizontal space between items (row direction) or lines (column direction).
+     */
+    set columnGap(v) {
+        if (this._columnGap === v) return;
+        this._columnGap = v;
+        this._changedContents();
+    }
+
+    get columnGap() {
+        return this._columnGap;
+    }
+
+    /**
+     * Space between items on the same line.
+     */
+    get mainAxisGap() {
+        return this._horizontal ? this._columnGap : this._rowGap;
+    }
+
+    /**
+     * Space between lines.
+     */
+    get crossAxisGap() {
+        return this._horizontal ? this._rowGap : this._columnGap;
     }
 
     patch(settings) {

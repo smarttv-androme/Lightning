@@ -48,6 +48,8 @@ export default class ContentAligner {
             growSize = remainingSpace / lines.length;
         }
 
+        const gap = this._layout._flexContainer.crossAxisGap;
+
         let currentPos = spacingBefore;
         for (let i = 0, n = lines.length; i < n; i++) {
             const crossAxisLayoutOffset = currentPos;
@@ -65,7 +67,7 @@ export default class ContentAligner {
             }
 
             currentPos += finalCrossAxisLayoutSize;
-            currentPos += spacingBetween;
+            currentPos += spacingBetween + gap;
         }
     }
 
@@ -79,6 +81,9 @@ export default class ContentAligner {
         for (let i = 0, n = lines.length; i < n; i++) {
             const line = lines[i];
             total += line.crossAxisLayoutSize;
+        }
+        if (lines.length > 1) {
+            total += this._layout._flexContainer.crossAxisGap * (lines.length - 1);
         }
         return total;
     }

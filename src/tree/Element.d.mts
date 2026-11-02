@@ -259,6 +259,39 @@ declare namespace Element {
      */
     direction?: 'column' | 'row';
     /**
+     * Flexbox container horizontal gap between items or lines
+     *
+     * @remarks
+     * CSS Documentation:
+     * - [`column-gap` (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/column-gap)
+     *
+     * See [Flexbox](https://lightningjs.io/docs/#/lightning-core-reference/Templates/Flexbox) documentation
+     * for more information.
+     */
+    columnGap?: number;
+    /**
+     * Flexbox container gap. Sets both `rowGap` and `columnGap`
+     *
+     * @remarks
+     * CSS Documentation:
+     * - [`gap` (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/gap)
+     *
+     * See [Flexbox](https://lightningjs.io/docs/#/lightning-core-reference/Templates/Flexbox) documentation
+     * for more information.
+     */
+    gap?: number;
+    /**
+     * Flexbox container vertical gap between items or lines
+     *
+     * @remarks
+     * CSS Documentation:
+     * - [`row-gap` (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/row-gap)
+     *
+     * See [Flexbox](https://lightningjs.io/docs/#/lightning-core-reference/Templates/Flexbox) documentation
+     * for more information.
+     */
+    rowGap?: number;
+    /**
      * Flexbox container justify content
      *
      * @remarks

@@ -54,6 +54,9 @@ Specified in the element property: `flex: {}`.
 | `paddingTop` | Number | padding-top |  |
 | `paddingRight` | Number | padding-right |  |
 | `paddingBottom` | Number | padding-bottom |  |
+| `gap` | Number (px) | gap | Sets both `rowGap` and `columnGap` |
+| `rowGap` | Number (px) | row-gap |  |
+| `columnGap` | Number (px) | column-gap |  |
 
 
 ### Flex Item
