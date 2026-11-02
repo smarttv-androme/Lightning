@@ -103,6 +103,9 @@ export default class HtmlTreeBuilder {
         div.style.paddingTop = flex.paddingTop + 'px';
         div.style.paddingRight = flex.paddingRight + 'px';
         div.style.paddingBottom = flex.paddingBottom + 'px';
+
+        div.style.rowGap = (flex.rowGap || 0) + 'px';
+        div.style.columnGap = (flex.columnGap || 0) + 'px';
     }
 
     _applyFlexItemHtml(flexItem, div) {
