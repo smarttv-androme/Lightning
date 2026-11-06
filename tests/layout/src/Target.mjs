@@ -491,7 +491,9 @@ export default class Target {
             direction: flex.direction,
             alignItems: flex.alignItems,
             alignContent: flex.alignContent,
-            justifyContent: flex.justifyContent
+            justifyContent: flex.justifyContent,
+            rowGap: flex.rowGap,
+            columnGap: flex.columnGap
         };
     }
 

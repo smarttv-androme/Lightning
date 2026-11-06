@@ -31,6 +31,7 @@ export default class ItemPositioner {
 
     position() {
         const {spacingBefore, spacingBetween} = this._getSpacing();
+        const gap = this._layout._flexContainer.mainAxisGap;
 
         let currentPos = spacingBefore;
 
@@ -40,7 +41,7 @@ export default class ItemPositioner {
 
             item.flexItem._setMainAxisLayoutPos(currentPos);
             currentPos += item.flexItem._getMainAxisLayoutSizeWithPaddingAndMargin();
-            currentPos += spacingBetween;
+            currentPos += spacingBetween + gap;
         }
     }
 

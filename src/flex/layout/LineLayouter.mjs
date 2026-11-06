@@ -57,6 +57,7 @@ export default class LineLayouter {
         this._setup();
         const items = this._layout.items;
         const wrap = this._layout.isWrapping();
+        const gap = this._layout._flexContainer.mainAxisGap;
 
         let startIndex = 0;
         let i;
@@ -69,12 +70,14 @@ export default class LineLayouter {
             // Get predicted main axis size.
             const itemMainAxisSize = item.flexItem._getMainAxisLayoutSizeWithPaddingAndMargin();
 
-            if (wrap && (i > startIndex)) {
-                const isOverflowing = (this._curMainAxisPos + itemMainAxisSize > this._mainAxisSize);
-                if (isOverflowing) {
+            if (i > startIndex) {
+                const isOverflowing = (this._curMainAxisPos + gap + itemMainAxisSize > this._mainAxisSize);
+                if (wrap && isOverflowing) {
                     this._layoutLine(startIndex, i - 1);
                     this._curMainAxisPos = 0;
                     startIndex = i;
+                } else {
+                    this._addToMainAxisPos(gap);
                 }
             }
 

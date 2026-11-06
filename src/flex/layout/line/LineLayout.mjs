@@ -77,6 +77,7 @@ export default class LineLayout {
             const item = this.items[i];
             mainAxisMinSize += item.flexItem._getMainAxisMinSizeWithPaddingAndMargin();
         }
+        mainAxisMinSize += this._layout._flexContainer.mainAxisGap * (this.numberOfItems - 1);
         return mainAxisMinSize;
     }
     
