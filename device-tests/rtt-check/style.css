@@ -1,0 +1,20 @@
+body { margin: 0; background: #000; color: #ccc; font: 19px/1.4 sans-serif; overflow: hidden; }
+canvas { position: absolute; left: 0; top: 0; }
+
+/* Side panel, right of the 1360px wide scene */
+#panel { position: absolute; left: 1370px; top: 0; right: 0; bottom: 0; padding: 28px 24px; background: #000; }
+#panel .label { font-size: 15px; color: #777; letter-spacing: 2px; margin: 0 0 4px; }
+#panel .now { font-size: 32px; line-height: 1.15; color: #ff0; font-weight: bold; margin-bottom: 8px; }
+#panel .desc { margin-bottom: 18px; }
+#panel .now.renderer { color: #6cf; }
+#panel .fps { font-size: 30px; color: #fff; margin-bottom: 22px; }
+#panel .block { margin-bottom: 22px; }
+#panel table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+#panel td:first-child { width: 48px; }
+#panel td { padding: 1px 12px 1px 0; }
+#panel td.h { color: #777; }
+#panel td.cur { color: #ff0; }
+#panel .legend { margin-top: 8px; font-size: 14px; line-height: 1.25; color: #999; }
+#panel .legend div { display: inline-block; vertical-align: top; width: 50%; }
+#panel td.r { text-align: right; white-space: nowrap; }
+#panel .keys { margin-top: 10px; font-size: 15px; color: #777; }

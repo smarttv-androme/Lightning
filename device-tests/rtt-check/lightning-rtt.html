@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Lightning RTT test</title>
+<link rel="stylesheet" href="style.css">
+<div id="panel"></div>
+
+<!-- Lightning core of this repo: BUILD_ES5=true npx vite build --mode production -->
+<script src="/dist/lightning.es5.js"></script>
+
+<!-- Plain ES5 scripts (old TV browsers), sharing window.RttTest. Order matters. See README.md. -->
+<script src="src/config.js"></script>     <!-- URL options + layout constants -->
+<script src="src/card.js"></script>       <!-- CARD TEMPLATE: edit this to change the cards -->
+<script src="src/scene.js"></script>      <!-- the scenes: where the rtt goes -->
+<script src="src/renderers.js"></script>  <!-- the renderers: workarounds in how a frame is drawn -->
+<script src="src/animation.js"></script>  <!-- scrolling, progress bars, image swaps, focus -->
+<script src="src/panel.js"></script>      <!-- fps, results, side panel -->
+<script src="src/main.js"></script>       <!-- starts everything -->
