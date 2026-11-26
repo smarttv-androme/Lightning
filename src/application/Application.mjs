@@ -33,8 +33,6 @@ export default class Application extends Component {
         Application.booting = false;
 
         this.__updateFocusCounter = 0;
-        this.__keypressTimers = new Map();
-        this.__longpressTriggeredMap = new Map();
         this.__hoveredChild = null;
 
         // We must construct while the application is not yet attached.
@@ -109,6 +107,14 @@ export default class Application extends Component {
         this._setOptions(Application._temp_options);
         delete Application._temp_options;
 
+        /**
+         * Tracks keys which are currently down.
+         * Needs to be initialized in __construct, as focus changes can occur during a component's constructor
+         *
+         * @type {Map<string | number, Press>}
+         */
+        this.__presses = new Map();
+
         super.__construct();
     }
 
@@ -162,6 +168,20 @@ export default class Application extends Component {
 
                 if (this.getOption('debug')) {
                     console.log('[Lightning] Focus changed: ' + newFocusedComponent.getLocationString());
+                }
+
+                // `index` is the common length of the old and new focus path.
+                // If it is smaller than the depth of the key press, the focus path changed.
+                // By clamping the depth here, key releases / long presses can still be routed
+                // to ancestors in the focus path which were focused on key down, while
+                // skipping the components which lost focus between key down and key up.
+                // For example:
+                //  [Application, ButtonRow, ButtonA] depth = 3
+                //  [Application, ButtonRow, ButtonB] index = 2 => depth = 2
+                for (const press of this.__presses.values()) {
+                    if (index < press.depth) {
+                        press.depth = index;
+                    }
                 }
 
                 // Unfocus events.
@@ -304,43 +324,28 @@ export default class Application extends Component {
         return false;
     }
 
+    /**
+     * Keydown listener
+     *
+     * Tracks keys which have been pressed so that we can make sure that key releases / long presses are only
+     * routed to components which were on the focus path when the key is released.
+     *
+     * @param {KeyboardEvent} e
+     * @private
+     */
     _receiveKeydown(e) {
-        const obj = e;
-        const key = this.__keymap[e.keyCode];
-        const path = this.focusPath;
-
-        let keys;
-        if (key) {
-            keys = Array.isArray(key) ? key : [key];
-        }
+        const keys = this.__getKeys(e);
 
         if (keys) {
             for (let i = 0, n = keys.length; i < n; i++) {
-                const hasTimer = this.__keypressTimers.has(keys[i]);
-                // prevent event from getting fired when the timeout is still active
-                if (path[path.length - 1].longpress && hasTimer) {
-                    return;
-                }
-
-                if (!this.stage.application.focusTopDownEvent([`_capture${keys[i]}`, "_captureKey"], obj)) {
-                    this.stage.application.focusBottomUpEvent([`_handle${keys[i]}`, "_handleKey"], obj);
-                }
+                const key = keys[i];
+                this.__keydown(key, [`_capture${key}`, "_captureKey"], [`_handle${key}`, "_handleKey"], e, key);
             }
         } else {
-            if (!this.stage.application.focusTopDownEvent(["_captureKey"], obj)) {
-                this.stage.application.focusBottomUpEvent(["_handleKey"], obj);
-            }
+            this.__keydown(e.keyCode, ["_captureKey"], ["_handleKey"], e);
         }
 
         this.updateFocusPath();
-
-        const consumer = path[path.length - 1];
-
-        if (keys && consumer.longpress) {
-            for (let i = 0, n = keys.length; i < n; i++) {
-                this._startLongpressTimer(keys[i], consumer);
-            }
-        }
     }
 
     /**
@@ -352,44 +357,171 @@ export default class Application extends Component {
      * @private
      */
     _receiveKeyup(e) {
-        const obj = e;
-        const key = this.__keymap[e.keyCode];
-
-        let keys;
-        if (key) {
-            keys = Array.isArray(key) ? key : [key];
-        }
+        const keys = this.__getKeys(e);
 
         if (keys) {
             for (let i = 0, n = keys.length; i < n; i++) {
                 const key = keys[i];
-
-                const longpressTriggered = this.__longpressTriggeredMap.get(key) ?? false;
-                if (longpressTriggered) {
-                    this.__longpressTriggeredMap.set(key, false);
-                }
-                if (!longpressTriggered && !this.stage.application.focusTopDownEvent([`_capture${key}Release`, "_captureKeyRelease"], obj)) {
-                    this.stage.application.focusBottomUpEvent([`_handle${key}Release`, "_handleKeyRelease"], obj);
-                }
+                this.__keyup(key, [`_capture${key}Release`, "_captureKeyRelease"], [`_handle${key}Release`, "_handleKeyRelease"], e);
             }
         } else {
-            if (!this.stage.application.focusTopDownEvent(["_captureKeyRelease"], obj)) {
-                this.stage.application.focusBottomUpEvent(["_handleKeyRelease"], obj);
-            }
+            this.__keyup(e.keyCode, ["_captureKeyRelease"], ["_handleKeyRelease"], e);
         }
 
         this.updateFocusPath();
+    }
 
-        if (keys) {
-            for (let i = 0, n = keys.length; i < n; i++) {
-                if (this.__keypressTimers.has(keys[i])) {
-                    // keyup has fired before end of timeout so we clear it
-                    clearTimeout(this.__keypressTimers.get(keys[i]));
-                    // delete so we can register it again
-                    this.__keypressTimers.delete(keys[i]);
+    /**
+     * Returns the mapped names of the key, or undefined if the key is not mapped.
+     *
+     * @return {Array<string> | undefined}
+     */
+    __getKeys(e) {
+        const key = this.__keymap[e.keyCode];
+        if (!key) return undefined;
+
+        return Array.isArray(key) ? key : [key];
+    }
+
+    /**
+     * @param {string | number} id
+     *   Either the key name for a mapped key, or key code for an unmapped key.
+     * @param {Array<string>} captureEvents
+     * @param {Array<string>} handleEvents
+     * @param {KeyboardEvent} e
+     * @param longpressKey
+     *   The key name to use for the long press. Unmapped keys have no long press.
+     */
+    __keydown(id, captureEvents, handleEvents, e, longpressKey) {
+        let press = this.__presses.get(id);
+
+        // If the key was already down, treat it as a repeat. If the platform says that this is not a repeat,
+        // then the key up of the previous press was probably missed.
+        if (press && e.repeat !== false) {
+            // Avoid repeating key inputs when there is a long press timer
+            if (press.timer === undefined && !this.focusTopDownEvent(captureEvents, e)) {
+                this.focusBottomUpEvent(handleEvents, e);
+            }
+            return;
+        }
+
+        if (press) {
+            clearTimeout(press.timer);
+        }
+
+        const depth = this._focusPath.length;
+        const focused = this._focusPath[depth - 1];
+        press = {
+            depth: depth,
+            // The capture phase visits the focus path from index 0 up to, but not including, captureEnd.
+            captureEnd: depth,
+            // The handle phase visits the focus path from index depth - 1 down to, and including, handleEnd.
+            handleEnd: 0,
+            timer: undefined,
+            long: false
+        };
+        this.__presses.set(id, press);
+
+        const captured = this.__capturePressEvent(press, captureEvents, e);
+        if (captured !== -1) {
+            press.captureEnd = captured + 1;
+            press.handleEnd = depth;
+        } else {
+            const handled = this.__handlePressEvent(press, handleEvents, e);
+            if (handled !== -1) {
+                press.handleEnd = handled;
+            }
+        }
+
+        if (longpressKey) {
+            this._startLongpressTimer(longpressKey, focused, press);
+        }
+    }
+
+    /**
+     * @param {string | number} id
+     *   Either the key name for a mapped key, or key code for an unmapped key.
+     * @param {Array<string>} captureEvents
+     * @param {Array<string>} handleEvents
+     * @param {KeyboardEvent} e
+     */
+    __keyup(id, captureEvents, handleEvents, e) {
+        const press = this.__presses.get(id);
+
+        // A key up without a key down has no route, so there is no component that may handle it
+        if (!press) return;
+
+        this.__presses.delete(id);
+        clearTimeout(press.timer);
+
+        // If a long press has been dispatched already, we want to avoid dispatching the release event as well
+        if (!press.long) {
+            this.__dispatchPressEvent(press, captureEvents, handleEvents, e);
+        }
+    }
+
+    /**
+     * Sends a release or long press along the route of the key down that started the press.
+     *
+     * The event is offered to the same components as the key down, in the same order. This means that it stops
+     * at the component that consumed the key down. Components that lost focus since the key down are skipped.
+     * As a result, a component never gets a long press or release for a key down that it could not handle.
+     *
+     * @param {Press} press
+     * @param {Array<string>} captureEvents
+     * @param {Array<string>} handleEvents
+     * @param {KeyboardEvent} e
+     */
+    __dispatchPressEvent(press, captureEvents, handleEvents, e) {
+        if (this.__capturePressEvent(press, captureEvents, e) === -1) {
+            this.__handlePressEvent(press, handleEvents, e);
+        }
+    }
+
+    /**
+     * Top-down phase of a press event.
+     * @param {Press} press
+     * @param {Array<string>} events
+     * @param {KeyboardEvent} e
+     * @return the index in the focus path of the component that consumed the event, or -1.
+     */
+    __capturePressEvent(press, events, e) {
+        const path = this._focusPath;
+
+        // The depth decreases when a handler changes focus
+        for (let i = 0; i < press.captureEnd && i < press.depth; i++) {
+            const component = path[i];
+            const event = component._getMostSpecificHandledMember(events);
+            if (event !== undefined && component[event](e) !== false) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Bottom-up phase of a press event.
+     * @param {Press} press
+     * @param {Array<string>} events
+     * @param {KeyboardEvent} e
+     * @return the index in the focus path of the component that consumed the event, or -1.
+     */
+    __handlePressEvent(press, events, e) {
+        const path = this._focusPath;
+
+        for (let i = press.depth - 1; i >= press.handleEnd; i--) {
+            // The depth gets smaller when a handler changes the focus.
+            if (i < press.depth) {
+                const component = path[i];
+                const event = component._getMostSpecificHandledMember(events);
+                if (event !== undefined && component[event](e) !== false) {
+                    return i;
                 }
             }
         }
+
+        return -1;
     }
 
     /**
@@ -412,28 +544,24 @@ export default class Application extends Component {
      *
      * @param key
      * @param element
+     *   The component that had focus at key down.
+     * @param {Press} press
      * @private
      */
-    _startLongpressTimer(key, element) {
+    _startLongpressTimer(key, element, press) {
         const config = element.longpress;
-        const lookup = key.toLowerCase();
+        const timeout = config && config[key.toLowerCase()];
 
-        if (config[lookup]) {
-            const timeout = config[lookup];
+        if (timeout) {
             if (!Utils.isNumber(timeout)) {
                 element._throwError("config value for longpress must be a number");
             } else {
-                this.__keypressTimers.set(key, setTimeout(() => {
-                    if (!this.stage.application.focusTopDownEvent([`_capture${key}Long`, "_captureKey"], {})) {
-                        this.__longpressTriggeredMap.set(key, true);
-                        this.stage.application.focusBottomUpEvent([`_handle${key}Long`, "_handleKey"], {});
-                    }
-
-                    this.__keypressTimers.delete(key);
-                }, timeout || 500 /* prevent 0ms */));
+                press.timer = setTimeout(() => {
+                    press.long = true;
+                    this.__dispatchPressEvent(press, [`_capture${key}Long`, "_captureKey"], [`_handle${key}Long`, "_handleKey"], {});
+                }, timeout);
             }
         }
-        return;
     }
 
     _recieveScrollWheel(e) {
@@ -679,13 +807,11 @@ export default class Application extends Component {
         this._updateAttachedFlag();
         this._updateEnabledFlag();
 
-        if (this.__keypressTimers.size) {
-            for (const timer of this.__keypressTimers.values()) {
-                clearTimeout(timer);
-            }
-
-            this.__keypressTimers.clear();
+        for (const press of this.__presses.values()) {
+            clearTimeout(press.timer);
         }
+
+        this.__presses.clear();
     }
 
     getCanvas() {

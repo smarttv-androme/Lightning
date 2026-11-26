@@ -122,6 +122,33 @@ declare namespace Application {
   }
 }
 
+/**
+ * Tracks a key which is currently being held down
+ */
+interface Press {
+  /**
+   * Number of components at the start of the focus path that had focus at key down and kept it since.
+   * Used to determine whether to which components from the origin focus path the key release should be dispatched.
+   */
+  depth: number;
+  /**
+   * The capture phase visits the focus path from index 0 up to, but not including, this index.
+   */
+  captureEnd: number;
+  /**
+   * The handle phase visits the focus path from index `depth - 1` down to, and including, this index.
+   */
+  handleEnd: number;
+  /**
+   * The long press timer. Undefined if the focused component has no long press for this key.
+   */
+  timer: ReturnType<typeof setTimeout> | undefined;
+  /**
+   * True once the long press timer has fired. The release is then not dispatched.
+   */
+  long: boolean;
+}
+
 declare class Application<
   // Components use loose typing TemplateSpecs by default
   TemplateSpecType extends Application.TemplateSpecLoose = Application.TemplateSpecLoose,
@@ -132,7 +159,7 @@ declare class Application<
 > {
 
   // __updateFocusCounter: any;
-  // __keypressTimers: any;
+  // __presses: Map<string | number, Press>;
   // __hoveredChild: any;
   // __keymap: any;
   // __options: any;
@@ -190,7 +217,7 @@ declare class Application<
   // focusBottomUpEvent(events: any, ...args: any[]): any;
   // _receiveKeydown(e: KeyboardEvent): void;
   // _receiveKeyup(e: KeyboardEvent): void;
-  // _startLongpressTimer(key: any, element: any): void;
+  // _startLongpressTimer(key: any, element: any, press: Press): void;
   // _recieveScrollWheel(e: any): void;
   // fireTopDownScrollWheelHandler(event: any, obj: any): any;
   // fireBottomUpScrollWheelHandler(event: any, obj: any): any;
